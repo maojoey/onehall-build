@@ -4,11 +4,14 @@ import { createHash } from "node:crypto"
 import {
   existsSync,
   lstatSync,
+  mkdtempSync,
+  rmSync,
   readFileSync,
   readdirSync,
   writeFileSync,
 } from "node:fs"
 import { join } from "node:path"
+import { tmpdir } from "node:os"
 import {
   captureReleaseIdentity,
   collectDesktopArtifacts,
@@ -81,6 +84,21 @@ if (rustHost !== spec.target)
   throw new Error("Rust host differs from native target")
 if (process.platform === "darwin") exec("xcrun", ["--find", "clang"])
 else exec("where.exe", ["cl.exe"])
+// Compile and execute a native probe: checking cl.exe alone misses Git Bash's
+// unrelated link.exe shadowing MSVC, which otherwise fails after frontend work.
+const probe = mkdtempSync(join(tmpdir(), "onehall-cloud-probe-"))
+try {
+  const source = join(probe, "main.rs")
+  const binary = join(
+    probe,
+    process.platform === "win32" ? "probe.exe" : "probe"
+  )
+  writeFileSync(source, 'fn main() { println!("Native linker OK"); }\n')
+  exec("rustc", ["--target", spec.target, source, "-o", binary])
+  exec(binary, [])
+} finally {
+  rmSync(probe, { recursive: true, force: true })
+}
 console.log(
   `Verified snapshot ${manifest.sourceCommit}; public commit ${commit}; native ${platform}`
 )

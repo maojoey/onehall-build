@@ -12,8 +12,8 @@
     {
       "mode": "100644",
       "path": ".github/workflows/cloud-desktop.yml",
-      "sha256": "4598df1c9165d82e2534e8a3a021296390912875f6c1d3574e9d42a1647c0528",
-      "size": 3184
+      "sha256": "c522edbab6be0e15679babaa7adeff8e61f71148d4940f29634f356be1eb8db4",
+      "size": 3269
     },
     {
       "mode": "100644",
@@ -306,8 +306,8 @@
     {
       "mode": "100644",
       "path": "scripts/build-hall-cloud.mjs",
-      "sha256": "1a7b1bb3f7ceaa4a3ac007fbbb4a477c622fd634f5c4e8c5581d5525d4cad343",
-      "size": 4461
+      "sha256": "5936ff634a86e950470c8a13def80d4bb788002f8ce136e076d27ae20cd82e83",
+      "size": 5107
     },
     {
       "mode": "100644",

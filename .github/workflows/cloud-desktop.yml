@@ -37,7 +37,7 @@ jobs:
     timeout-minutes: 180
     defaults:
       run:
-        shell: bash
+        shell: ${{ matrix.platform == 'win-x64' && 'pwsh' || 'bash' }}
     env:
       SELECTED: ${{ inputs.targets == 'all' || inputs.targets == matrix.platform }}
       BUILD_PLATFORM: ${{ matrix.platform }}
@@ -67,13 +67,13 @@ jobs:
         run: rustup update stable --no-self-update && rustup default stable
       - name: Validate snapshot and native SDK
         if: env.SELECTED == 'true'
-        run: node scripts/build-hall-cloud.mjs --platform "$BUILD_PLATFORM" --check-only
+        run: node scripts/build-hall-cloud.mjs --platform "${{ matrix.platform }}" --check-only
       - name: Install dependencies
         if: env.SELECTED == 'true' && env.CHECK_ONLY != 'true'
         run: pnpm install --frozen-lockfile
       - name: Build native installer and prepare unsigned update
         if: env.SELECTED == 'true' && env.CHECK_ONLY != 'true'
-        run: node scripts/build-hall-cloud.mjs --platform "$BUILD_PLATFORM"
+        run: node scripts/build-hall-cloud.mjs --platform "${{ matrix.platform }}"
       - name: Upload prepared artifacts
         if: env.SELECTED == 'true' && env.CHECK_ONLY != 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -84,6 +84,7 @@ jobs:
           compression-level: 0
           retention-days: 1
       - name: Record result
+        shell: bash
         if: env.SELECTED == 'true'
         run: |
           echo "### $BUILD_PLATFORM completed" >> "$GITHUB_STEP_SUMMARY"
