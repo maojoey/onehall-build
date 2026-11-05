@@ -1,0 +1,20 @@
+{
+  "inspectReply": {
+    "displayName": "in.json",
+    "size": 47,
+    "sha256": "da36d1f53c22016dc9eeb7414d1be41ddca4b70f4bf1abd0deca0eecfe9ac355"
+  },
+  "commands": {
+    "hall_exchange_inspect_file": ["path"],
+    "hall_exchange_upload_file": ["transferId", "path"],
+    "hall_exchange_remote_upload_file": ["connectionId", "transferId", "path"],
+    "hall_exchange_save_artifact": ["objectId", "destination"],
+    "hall_exchange_remote_save_artifact": [
+      "connectionId",
+      "objectId",
+      "size",
+      "sha256",
+      "destination"
+    ]
+  }
+}

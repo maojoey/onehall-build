@@ -1,0 +1,90 @@
+name: OneHall cloud desktop
+
+on:
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: Platforms to build
+        type: choice
+        default: all
+        options: [all, mac-x64, mac-arm64, win-x64]
+      check_only:
+        description: Verify snapshot and native toolchain without compiling
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: onehall-cloud-${{ github.ref }}-${{ inputs.targets }}
+  cancel-in-progress: false
+
+jobs:
+  desktop:
+    name: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: mac-x64
+            runner: macos-15-intel
+          - platform: mac-arm64
+            runner: macos-15
+          - platform: win-x64
+            runner: windows-2022
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 180
+    defaults:
+      run:
+        shell: bash
+    env:
+      SELECTED: ${{ inputs.targets == 'all' || inputs.targets == matrix.platform }}
+      BUILD_PLATFORM: ${{ matrix.platform }}
+      CHECK_ONLY: ${{ inputs.check_only }}
+      NODE_OPTIONS: --max-old-space-size=6144
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_RELEASE_DEBUG: "0"
+      CARGO_PROFILE_RELEASE_STRIP: debuginfo
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: env.SELECTED == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: env.SELECTED == 'true'
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        if: env.SELECTED == 'true'
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
+        if: env.SELECTED == 'true' && runner.os == 'Windows'
+        with:
+          arch: x64
+      - name: Install native Rust
+        if: env.SELECTED == 'true'
+        run: rustup update stable --no-self-update && rustup default stable
+      - name: Validate snapshot and native SDK
+        if: env.SELECTED == 'true'
+        run: node scripts/build-hall-cloud.mjs --platform "$BUILD_PLATFORM" --check-only
+      - name: Install dependencies
+        if: env.SELECTED == 'true' && env.CHECK_ONLY != 'true'
+        run: pnpm install --frozen-lockfile
+      - name: Build native installer and prepare unsigned update
+        if: env.SELECTED == 'true' && env.CHECK_ONLY != 'true'
+        run: node scripts/build-hall-cloud.mjs --platform "$BUILD_PLATFORM"
+      - name: Upload prepared artifacts
+        if: env.SELECTED == 'true' && env.CHECK_ONLY != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: onehall-${{ matrix.platform }}
+          path: dist-hall/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+      - name: Record result
+        if: env.SELECTED == 'true'
+        run: |
+          echo "### $BUILD_PLATFORM completed" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Prepared artifacts require private signing and publication.' >> "$GITHUB_STEP_SUMMARY"

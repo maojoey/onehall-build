@@ -1,0 +1,11 @@
+{
+  "product": "onehall",
+  "version": "0.39.4",
+  "updateMode": "desktop-signed",
+  "releasesUrl": "https://github.com/maojoey/onehall/releases",
+  "upstream": {
+    "repository": "https://github.com/spacering-net/codeg",
+    "version": "0.40.0",
+    "commit": "95fd81df4374753c460b5cb0ed01de8f1ea24702"
+  }
+}

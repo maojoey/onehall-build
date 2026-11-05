@@ -1,0 +1,16 @@
+title = "OneHall reviewed public-source examples"
+[extend]
+useDefault = true
+
+# Exact public key and synthetic test/code strings reviewed on 2026-11-04.
+# New findings must be reviewed; do not add path-wide exclusions.
+[[allowlists]]
+description = "Public updater key, code identifiers and synthetic redaction fixtures"
+regexTarget = "secret"
+regexes = [
+  '^WRONG_FORGE_I18N_KEY$',
+  '^Ctrl\+Alt\+Shift\+Key$',
+  '^acme/halfblind$',
+  '^sk_live_abcdefghijkl$',
+  '^0EA7FBEECD959286$',
+]

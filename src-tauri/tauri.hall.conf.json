@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "createUpdaterArtifacts": false
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://updates.misq.in/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDBFQTdGQkVFQ0Q5NTkyODYKUldTR2twWE43dnVuRGlFUTVobStPdGtzVWYvZlVKeW4xd05VWm9HS3VOa1Jvak5ndWI0d3l4ek4K",
+      "requireSignedVersion": true
+    }
+  }
+}
