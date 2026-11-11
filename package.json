@@ -1,13 +1,14 @@
 {
   "name": "codeg",
   "private": true,
-  "version": "0.39.6",
+  "version": "0.39.7",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "hall:build": "node scripts/build-hall-desktop.mjs",
     "hall:task": "node scripts/hall-task.mjs",
+    "hall:release": "node scripts/hall-release.mjs",
     "lint": "eslint",
     "tauri": "tauri",
     "test": "vitest run",

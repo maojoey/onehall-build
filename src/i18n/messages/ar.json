@@ -1863,6 +1863,25 @@
     "zcode": {
       "adapterInfo": "يشغّل OneHall الحزمة {adapterPackage} كجسر ACP. ثبّت ZCode الرسمي وسجّل الدخول أولاً؛ يستخدم بيئته وإعداداته الحالية.",
       "runtimeHint": "ثبّت ZCode الرسمي وسجّل الدخول أولاً. يثبّت OneHall جسر ACP فقط. إذا فشل الاكتشاف، حدّد مسار CLI عبر ZCODE_BIN ومسار Node.js عبر ZCODE_NODE. تُدار النماذج وبيانات الاعتماد في ZCode."
+    },
+    "adapterRuntime": {
+      "title": "المحوّل وواجهة CLI المضمّنة",
+      "versions": "المحوّل {adapter} · CLI المضمّنة {cli}",
+      "unknown": "غير معروف",
+      "managed": "ثبّت OneHall هذا الإصدار واجتاز اختبار البدء.",
+      "external": "يُستخدم النسخة المثبّتة عبر npm.",
+      "cliNote": "يشغّل OneHall واجهة CLI المضمّنة مع المحوّل، وليس تلك الموجودة في الطرفية لديك.",
+      "versionLabel": "إصدار المحوّل",
+      "versionPlaceholder": "فارغ = الأحدث، أو مثل 2.3.0",
+      "upgradeLatest": "الترقية إلى الأحدث (مع اختبار مسبق)",
+      "installVersion": "تثبيت هذا الإصدار (مع اختبار مسبق)",
+      "upgrading": "جارٍ التثبيت والاختبار…",
+      "rollback": "الرجوع إلى {version}",
+      "upgraded": "تم التبديل إلى {version}.",
+      "upgradedNeedsLogin": "تم التبديل إلى {version}. بدأ بنجاح وينتظر تسجيل الدخول.",
+      "upgradeFailed": "فشلت الترقية: {message}",
+      "rolledBack": "تم الرجوع إلى {version}.",
+      "rollbackFailed": "فشل الرجوع: {message}"
     }
   },
   "AgentVocabulary": {

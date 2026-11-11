@@ -1863,6 +1863,25 @@
     "zcode": {
       "adapterInfo": "OneHall exécute {adapterPackage} comme passerelle ACP. Installez ZCode et connectez-vous d’abord ; son environnement et sa configuration existants sont utilisés.",
       "runtimeHint": "Installez ZCode et connectez-vous d’abord. OneHall installe uniquement la passerelle ACP. Si la détection échoue, indiquez l’entrée CLI avec ZCODE_BIN et Node.js avec ZCODE_NODE. Gérez modèles et identifiants dans ZCode."
+    },
+    "adapterRuntime": {
+      "title": "Adaptateur et CLI intégré",
+      "versions": "Adaptateur {adapter} · CLI intégré {cli}",
+      "unknown": "inconnue",
+      "managed": "Cette version a été installée par OneHall et a passé le test de démarrage.",
+      "external": "La copie installée par npm est utilisée.",
+      "cliNote": "OneHall exécute le CLI fourni avec l'adaptateur, pas celui de votre terminal.",
+      "versionLabel": "Version de l'adaptateur",
+      "versionPlaceholder": "vide = dernière, ou p. ex. 2.3.0",
+      "upgradeLatest": "Passer à la dernière (testée d'abord)",
+      "installVersion": "Installer cette version (testée d'abord)",
+      "upgrading": "Installation et test…",
+      "rollback": "Revenir à {version}",
+      "upgraded": "Passé à {version}.",
+      "upgradedNeedsLogin": "Passé à {version}. Le démarrage est correct, une connexion est attendue.",
+      "upgradeFailed": "Échec de la mise à niveau : {message}",
+      "rolledBack": "Retour à {version}.",
+      "rollbackFailed": "Échec du retour arrière : {message}"
     }
   },
   "AgentVocabulary": {

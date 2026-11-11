@@ -222,6 +222,10 @@ function DesktopHallWorkspaceShell({ children }: { children: ReactNode }) {
   // remote transport and show the remote's folders (Mac acceptance G3).
   const [mountedKey, setMountedKey] = useState<string | null>(null)
   const stateKey = useRef<string | null>(null)
+  // Branch tabs whose credentials were refreshed through headquarters since
+  // this window started. Restored tabs may hold stale ones, so their first
+  // activation still waits for the refresh.
+  const refreshedBranchKeys = useRef<Set<string>>(new Set())
   const [activationError, setActivationError] = useState<{
     key: string
     message: string
@@ -243,25 +247,47 @@ function DesktopHallWorkspaceShell({ children }: { children: ReactNode }) {
     restoreBackendScopedStores(active.key)
     stateKey.current = active.key
     let cancelled = false
+    const { branchId, headquartersConnectionId } = active
+    // Re-derives the tab when headquarters hands out a new connection;
+    // returns true when it did (the caller must not mount this tab).
+    const refreshBranch = async (isStale: () => boolean): Promise<boolean> => {
+      if (!branchId || headquartersConnectionId == null) return false
+      const connection = await branchClient(headquartersConnectionId).connect(
+        branchId
+      )
+      if (isStale()) return true
+      refreshedBranchKeys.current.add(active.key)
+      if (connection.connectionId === active.remoteConnectionId) return false
+      const store = useHallWorkspaceStore.getState()
+      store.openDerivedBranch(
+        headquartersConnectionId,
+        connection.connectionId,
+        branchId,
+        connection.name
+      )
+      store.close(active.key)
+      return true
+    }
     void (async () => {
       try {
-        if (active.branchId && active.headquartersConnectionId != null) {
-          const connection = await branchClient(
-            active.headquartersConnectionId
-          ).connect(active.branchId)
-          if (cancelled) return
-          if (connection.connectionId !== active.remoteConnectionId) {
-            const store = useHallWorkspaceStore.getState()
-            store.openDerivedBranch(
-              active.headquartersConnectionId,
-              connection.connectionId,
-              active.branchId,
-              connection.name
-            )
-            store.close(active.key)
-            return
-          }
+        // A branch already refreshed this session mounts at once; the round
+        // trip to headquarters runs in the background (T10a).
+        if (refreshedBranchKeys.current.has(active.key)) {
+          setActivationError(null)
+          setMountedKey(active.key)
+          // Mounting re-runs this effect and cancels it, so the background
+          // refresh only checks that the tab is still open.
+          void refreshBranch(
+            () =>
+              !useHallWorkspaceStore
+                .getState()
+                .tabs.some((tab) => tab.key === active.key)
+          ).catch((error) =>
+            console.warn("[hall] background branch refresh failed:", error)
+          )
+          return
         }
+        if (await refreshBranch(() => cancelled)) return
         if (!cancelled) {
           setActivationError(null)
           setMountedKey(active.key)

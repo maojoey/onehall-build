@@ -20,6 +20,9 @@ use tokio::process::Command;
 const ENABLED: &str = "ONEHALL_CODEX_BRIDGE";
 const PROGRAM: &str = "ONEHALL_CODEX_BRIDGE_PROGRAM";
 const CONFIG: &str = "ONEHALL_CODEX_BRIDGE_CONFIG";
+/// Node binary that runs [`PROGRAM`] when it is a `.js` entry (the CLI that
+/// ships inside codex-acp); absent for a native executable.
+const RUNNER: &str = "ONEHALL_CODEX_BRIDGE_RUNNER";
 /// The release the frozen-permission behaviour was verified against. It is what
 /// the execution policy records; launching accepts any newer 0.x release too
 /// (see [`version_supported`]), because the CLI updates faster than we re-verify.
@@ -34,8 +37,70 @@ fn invalid(message: &str) -> AppCommandError {
     AppCommandError::invalid_input(message)
 }
 
+/// A Codex CLI the bridge may launch: the program, plus the node binary to run
+/// it with when it is a `.js` entry.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Cli {
+    program: PathBuf,
+    runner: Option<PathBuf>,
+}
+
+/// Executable and leading arguments that start `program`, through `runner`
+/// when there is one.
+fn launch_parts(runner: Option<&Path>, program: &Path) -> (PathBuf, Vec<OsString>) {
+    match runner {
+        Some(runner) => (runner.to_path_buf(), vec![program.as_os_str().to_owned()]),
+        None => (program.to_path_buf(), Vec::new()),
+    }
+}
+
+/// CLIs to try, best first. An explicit `CODEX_PATH` is the user's choice and
+/// is the only candidate. Otherwise the CLI bundled with codex-acp comes first
+/// (it is the one the adapter was built against), then `codex` from PATH.
+fn ordered_candidates(
+    explicit: Option<&str>,
+    bundled: Option<&crate::acp::adapter_cli::BundledCli>,
+    node: Option<&Path>,
+    path: &std::ffi::OsStr,
+    cwd: Option<&str>,
+) -> Vec<Cli> {
+    let runner_for = |program: &Path| {
+        program
+            .extension()
+            .is_some_and(|ext| ext == "js")
+            .then(|| node.map(Path::to_path_buf))
+    };
+    let make = |program: PathBuf| -> Option<Cli> {
+        match runner_for(&program) {
+            Some(Some(runner)) => Some(Cli { program, runner: Some(runner) }),
+            Some(None) => None, // a .js entry with no node to run it
+            None => Some(Cli { program, runner: None }),
+        }
+    };
+    if let Some(name) = explicit {
+        return resolve_program(name, path, cwd)
+            .and_then(make)
+            .into_iter()
+            .collect();
+    }
+    let mut out = Vec::new();
+    if let Some(cli) = bundled
+        .and_then(|cli| std::fs::canonicalize(&cli.path).ok())
+        .and_then(make)
+    {
+        out.push(cli);
+    }
+    if let Some(cli) = resolve_program("codex", path, cwd).and_then(make) {
+        if !out.contains(&cli) {
+            out.push(cli);
+        }
+    }
+    out
+}
+
 /// Called only for host-prepared hall Codex launches, after member overrides.
-/// Select the actual installed CLI before substituting our own same-release CLI.
+/// Select the Codex CLI (see [`ordered_candidates`]) before substituting our
+/// own same-release CLI.
 pub(crate) async fn prepare(
     runtime: &mut BTreeMap<String, String>,
     cwd: Option<&str>,
@@ -46,23 +111,49 @@ pub(crate) async fn prepare(
         .ok_or_else(|| invalid("Hall Codex launch requires this OneHall release's codeg-cli"))?;
     let own = std::fs::canonicalize(own)
         .map_err(|_| invalid("This OneHall release's codeg-cli is unavailable"))?;
-    let selected = runtime
+    let explicit = runtime
         .get("CODEX_PATH")
         .cloned()
         .or_else(|| std::env::var("CODEX_PATH").ok())
-        .filter(|value| !value.trim().is_empty())
-        .unwrap_or_else(|| "codex".into());
+        .filter(|value| !value.trim().is_empty());
     let path = runtime
         .get("PATH")
         .map(OsString::from)
         .or_else(|| std::env::var_os("PATH"))
         .unwrap_or_default();
-    let actual = resolve_program(&selected, &path, cwd)
-        .ok_or_else(|| invalid("Hall Codex launch requires an installed Codex CLI 0.163.0 or newer"))?;
-    if actual == own {
-        return Err(invalid("Hall Codex bridge cannot invoke itself"));
+    let bundled = if explicit.is_none() {
+        crate::acp::adapter_cli::installed_adapter(crate::acp::adapter_cli::AdapterKind::Codex)
+            .await
+            .and_then(|adapter| adapter.cli)
+    } else {
+        None
+    };
+    let node = which::which_in("node", Some(&path), cwd.unwrap_or(".")).ok();
+    let candidates = ordered_candidates(explicit.as_deref(), bundled.as_ref(), node.as_deref(), &path, cwd);
+    if candidates.is_empty() {
+        return Err(invalid(
+            "Hall Codex launch requires an installed Codex CLI 0.163.0 or newer",
+        ));
     }
-    verify_version(&actual).await?;
+    let mut chosen = None;
+    for cli in candidates {
+        if cli.program == own {
+            return Err(invalid("Hall Codex bridge cannot invoke itself"));
+        }
+        match verify_version(&cli).await {
+            Ok(()) => {
+                chosen = Some(cli);
+                break;
+            }
+            Err(error) => tracing::warn!(
+                program = %cli.program.display(),
+                "skipping a Codex CLI that failed the bridge version check: {error}"
+            ),
+        }
+    }
+    let actual = chosen.ok_or_else(|| {
+        invalid("Hall Codex bridge needs Codex CLI 0.163.0 or newer; check CODEX_PATH or the installed codex")
+    })?;
     // Only host-generated member configuration defines the lock. Runtime
     // settings may contain legacy profiles or dotted overrides and are never
     // used as the source of trusted restrictions.
@@ -78,7 +169,11 @@ pub(crate) async fn prepare(
         Value::Object(adapter_config).to_string(),
     );
     runtime.insert(CONFIG.into(), Value::Object(locked.config).to_string());
-    runtime.insert(PROGRAM.into(), actual.to_string_lossy().into_owned());
+    runtime.insert(PROGRAM.into(), actual.program.to_string_lossy().into_owned());
+    match &actual.runner {
+        Some(runner) => runtime.insert(RUNNER.into(), runner.to_string_lossy().into_owned()),
+        None => runtime.remove(RUNNER),
+    };
     runtime.insert(ENABLED.into(), "1".into());
     runtime.insert("CODEX_PATH".into(), own.to_string_lossy().into_owned());
     Ok(())
@@ -125,8 +220,10 @@ fn version_supported(output: &str) -> bool {
     )
 }
 
-async fn verify_version(program: &Path) -> Result<(), AppCommandError> {
-    let mut child = Command::new(program)
+async fn verify_version(cli: &Cli) -> Result<(), AppCommandError> {
+    let (exe, lead) = launch_parts(cli.runner.as_deref(), &cli.program);
+    let mut child = Command::new(exe)
+        .args(lead)
         .arg("--version")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -536,25 +633,31 @@ pub(crate) fn entry() -> Option<ExitCode> {
         if actual == std::fs::canonicalize(own).map_err(|_| FAILURE)? {
             return Err(FAILURE);
         }
+        let runner = std::env::var_os(RUNNER).map(PathBuf::from);
+        let (exe, lead) = launch_parts(runner.as_deref(), &actual);
         let args: Vec<_> = std::env::args_os().skip(1).collect();
         if args == [OsString::from("--version")] {
-            return std::process::Command::new(&actual)
+            return std::process::Command::new(&exe)
+                .args(&lead)
                 .arg("--version")
                 .env_remove(ENABLED)
                 .env_remove(CONFIG)
                 .env_remove(PROGRAM)
+                .env_remove(RUNNER)
                 .status()
                 .map(|status| status.code().unwrap_or(1))
                 .map_err(|_| FAILURE);
         }
         let locked = Locked::parse(&std::env::var(CONFIG).map_err(|_| FAILURE)?)?;
         let args = locked.startup_args(&args)?;
-        let mut command = Command::new(&actual);
+        let mut command = Command::new(&exe);
         command
+            .args(lead)
             .args(args)
             .env_remove(ENABLED)
             .env_remove(CONFIG)
             .env_remove(PROGRAM)
+            .env_remove(RUNNER)
             .env("CODEX_PATH", &actual);
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(2)
@@ -923,5 +1026,141 @@ mod version_tests {
         assert!(!version_supported("codex-cli 0.164.0-alpha.1"));
         assert!(!version_supported("codex 0.164.0"));
         assert!(!version_supported(""));
+    }
+}
+
+#[cfg(test)]
+mod selection_tests {
+    use super::*;
+    use crate::acp::adapter_cli::BundledCli;
+
+    fn temp(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "bridge-select-{name}-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::canonicalize(dir).unwrap()
+    }
+
+    fn touch(path: &Path) -> PathBuf {
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, "").unwrap();
+        std::fs::canonicalize(path).unwrap()
+    }
+
+    fn bundled(path: &Path) -> BundledCli {
+        BundledCli {
+            path: path.to_path_buf(),
+            version: Some("0.164.0".into()),
+            needs_node: true,
+        }
+    }
+
+    #[test]
+    fn the_bundled_cli_is_tried_before_the_one_on_path() {
+        let root = temp("order");
+        let js = touch(&root.join("adapter/bin/codex.js"));
+        let on_path = touch(&root.join("bin/codex"));
+        let node = touch(&root.join("node"));
+        let got = ordered_candidates(
+            None,
+            Some(&bundled(&js)),
+            Some(&node),
+            root.join("bin").as_os_str(),
+            None,
+        );
+        assert_eq!(
+            got,
+            vec![
+                Cli { program: js, runner: Some(node) },
+                Cli { program: on_path, runner: None },
+            ]
+        );
+        std::fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn path_is_the_fallback_when_nothing_is_bundled() {
+        let root = temp("fallback");
+        let on_path = touch(&root.join("bin/codex"));
+        let got = ordered_candidates(None, None, None, root.join("bin").as_os_str(), None);
+        assert_eq!(got, vec![Cli { program: on_path, runner: None }]);
+        std::fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn a_bundled_js_entry_without_node_is_skipped() {
+        let root = temp("nonode");
+        let js = touch(&root.join("adapter/bin/codex.js"));
+        let on_path = touch(&root.join("bin/codex"));
+        let got = ordered_candidates(
+            None,
+            Some(&bundled(&js)),
+            None,
+            root.join("bin").as_os_str(),
+            None,
+        );
+        assert_eq!(got, vec![Cli { program: on_path, runner: None }]);
+        std::fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn an_explicit_codex_path_is_the_only_candidate() {
+        let root = temp("explicit");
+        let js = touch(&root.join("adapter/bin/codex.js"));
+        touch(&root.join("bin/codex"));
+        let mine = touch(&root.join("mine/codex"));
+        let got = ordered_candidates(
+            Some(mine.to_str().unwrap()),
+            Some(&bundled(&js)),
+            None,
+            root.join("bin").as_os_str(),
+            None,
+        );
+        assert_eq!(got, vec![Cli { program: mine, runner: None }]);
+        std::fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn nothing_installed_means_no_candidates() {
+        let root = temp("none");
+        let got = ordered_candidates(None, None, None, root.as_os_str(), None);
+        assert!(got.is_empty());
+        std::fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn launch_parts_put_the_program_behind_its_runner() {
+        let program = Path::new("/a/codex.js");
+        assert_eq!(
+            launch_parts(Some(Path::new("/usr/bin/node")), program),
+            (PathBuf::from("/usr/bin/node"), vec![OsString::from("/a/codex.js")])
+        );
+        assert_eq!(
+            launch_parts(None, program),
+            (PathBuf::from("/a/codex.js"), Vec::new())
+        );
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn the_version_check_runs_a_script_through_its_runner() {
+        let root = temp("runner");
+        let script = touch(&root.join("codex.js"));
+        std::fs::write(&script, "echo 'codex-cli 0.164.0'\n").unwrap();
+        let sh = PathBuf::from("/bin/sh");
+        let ok = Cli { program: script.clone(), runner: Some(sh.clone()) };
+        assert!(verify_version(&ok).await.is_ok());
+
+        std::fs::write(&script, "echo 'codex-cli 0.162.0'\n").unwrap();
+        assert!(verify_version(&Cli { program: script, runner: Some(sh) })
+            .await
+            .is_err());
+        std::fs::remove_dir_all(root).ok();
     }
 }

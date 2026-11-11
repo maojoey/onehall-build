@@ -124,7 +124,7 @@ fn dist_tags_url(package_name: &str) -> String {
     )
 }
 
-async fn fetch_npm_latest(package_name: &str) -> Result<Option<String>, AppCommandError> {
+pub(crate) async fn fetch_npm_latest(package_name: &str) -> Result<Option<String>, AppCommandError> {
     let response = remote_registry::registry_http_client()?
         .get(dist_tags_url(package_name))
         .send()

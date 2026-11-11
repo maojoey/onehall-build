@@ -1863,6 +1863,25 @@
     "zcode": {
       "adapterInfo": "OneHall ejecuta {adapterPackage} como puente ACP. Instala ZCode e inicia sesión primero; utiliza su entorno y configuración existentes.",
       "runtimeHint": "Instala ZCode e inicia sesión primero. OneHall solo instala el puente ACP. Si falla la detección, indica la entrada CLI con ZCODE_BIN y Node.js con ZCODE_NODE. Gestiona modelos y credenciales en ZCode."
+    },
+    "adapterRuntime": {
+      "title": "Adaptador y CLI incluido",
+      "versions": "Adaptador {adapter} · CLI incluido {cli}",
+      "unknown": "desconocida",
+      "managed": "OneHall instaló esta versión y superó la prueba de arranque.",
+      "external": "Se usa la copia instalada con npm.",
+      "cliNote": "OneHall ejecuta el CLI incluido en el adaptador, no el de tu terminal.",
+      "versionLabel": "Versión del adaptador",
+      "versionPlaceholder": "vacío = última, o p. ej. 2.3.0",
+      "upgradeLatest": "Actualizar a la última (con prueba previa)",
+      "installVersion": "Instalar esta versión (con prueba previa)",
+      "upgrading": "Instalando y probando…",
+      "rollback": "Volver a {version}",
+      "upgraded": "Cambiado a {version}.",
+      "upgradedNeedsLogin": "Cambiado a {version}. Arrancó bien y espera un inicio de sesión.",
+      "upgradeFailed": "Error al actualizar: {message}",
+      "rolledBack": "Se volvió a {version}.",
+      "rollbackFailed": "Error al volver atrás: {message}"
     }
   },
   "AgentVocabulary": {

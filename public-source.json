@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "f3b667dcc023c945b53dca6038b02974d29b94f3",
-  "version": "0.39.6",
+  "sourceCommit": "23bae165dd60168971115fa672f7dca897e2353d",
+  "version": "0.39.7",
   "files": [
     {
       "mode": "100644",
@@ -192,14 +192,14 @@
     {
       "mode": "100644",
       "path": "onehall.release.json",
-      "sha256": "4eb891008d3b7f8b7355763859b287383291905785158bf4009a0785d2b19277",
+      "sha256": "7b7a1c67620e259bd7b62e549c5c27ea5202317de8a73cbdab15c618ee551102",
       "size": 311
     },
     {
       "mode": "100644",
       "path": "package.json",
-      "sha256": "770c275a3cae01b67282157fffe56fda8dc1be4cdc83f89159696e0d3fb38cd3",
-      "size": 5237
+      "sha256": "1ac00a118ec3c9b2be71b7381c1e2599551701be4b824a7ee231e55b0c972b4e",
+      "size": 5290
     },
     {
       "mode": "100644",
@@ -318,13 +318,13 @@
     {
       "mode": "100644",
       "path": "src-tauri/Cargo.lock",
-      "sha256": "3067eb10edf689179bc7a894d9087c2c390b514368f7f7146cf31d298005cec2",
+      "sha256": "755a68d39420c9165e23fbe0efc1156f89682145fe49be61f1bb3e99c6b85391",
       "size": 226144
     },
     {
       "mode": "100644",
       "path": "src-tauri/Cargo.toml",
-      "sha256": "f3a41638e9e0d7f5f3e098065f22e0d4fd398a9b865d67a053b0e11d05f7edfd",
+      "sha256": "1b563a00fede876810a8a9ff18f611a7e09f726c5b3a6e32434452fd2f402065",
       "size": 19754
     },
     {
@@ -1469,6 +1469,24 @@
     },
     {
       "mode": "100644",
+      "path": "src-tauri/src/acp/adapter_cli.rs",
+      "sha256": "9cd89e722e4c226c3c7ca9e082deb804ebf1329f9434a011e73c47b35978a541",
+      "size": 12047
+    },
+    {
+      "mode": "100644",
+      "path": "src-tauri/src/acp/adapter_probe.rs",
+      "sha256": "176d62b18e999a59e47dacaf805ca0d58603fabbcd2f8fc4f150d59fa7b949f5",
+      "size": 11371
+    },
+    {
+      "mode": "100644",
+      "path": "src-tauri/src/acp/adapter_store.rs",
+      "sha256": "5979442188f6cce73fc10a421cd7fc3985329698b75d494e44f0e773314ffa4b",
+      "size": 22406
+    },
+    {
+      "mode": "100644",
       "path": "src-tauri/src/acp/agent_mentions.rs",
       "sha256": "224bee2f95b2f5c3a3aa99e5c57c84156061f4e61a6f082e9f6af6261b9e047a",
       "size": 63505
@@ -1524,8 +1542,8 @@
     {
       "mode": "100644",
       "path": "src-tauri/src/acp/codex_catalog_source.rs",
-      "sha256": "bd755210a611bcb0fc1f053618e3f0c4e2578ac465b688189358ecec02d4ba47",
-      "size": 8533
+      "sha256": "d18dcc2b3aea58db5aea21167db98750fedb9382b4f1f6e7778e30eb6f5038f4",
+      "size": 6849
     },
     {
       "mode": "100644",
@@ -1740,8 +1758,8 @@
     {
       "mode": "100644",
       "path": "src-tauri/src/acp/latest_release.rs",
-      "sha256": "00f06afa77d1932a2eadfedaadd21b2883bf5e398e3034833dac89075195ac5a",
-      "size": 23865
+      "sha256": "537efbfbf58ff4b242df2f7c986816b9c2798ab59d02015c3af5dbe4a0dca6ce",
+      "size": 23876
     },
     {
       "mode": "100644",
@@ -1758,8 +1776,8 @@
     {
       "mode": "100644",
       "path": "src-tauri/src/acp/mod.rs",
-      "sha256": "7532d6362c8522cbb7cce3af47c28cc285a5839ab9b682bb662a3c0579bfe7cf",
-      "size": 3238
+      "sha256": "4e29f58d88d71b76c6c5454869332f1f61ba4ef8a82c8f16f8cd5aa035c39a2c",
+      "size": 3305
     },
     {
       "mode": "100644",
@@ -2478,8 +2496,14 @@
     {
       "mode": "100644",
       "path": "src-tauri/src/commands/acp.rs",
-      "sha256": "9e2ee5f98bae2d03f4d16375a6ce1977fcd194af3182689065a961b10cee0fa0",
-      "size": 931160
+      "sha256": "f95654b69818c758d6b4f132254291be6d09b5eb027247462550b455576dd350",
+      "size": 932278
+    },
+    {
+      "mode": "100644",
+      "path": "src-tauri/src/commands/acp_adapter.rs",
+      "sha256": "94f1600da445697b17eb1a3b1ff2b7a5141d14c0df8554507a69032c09083cf9",
+      "size": 2423
     },
     {
       "mode": "100644",
@@ -2790,8 +2814,8 @@
     {
       "mode": "100644",
       "path": "src-tauri/src/commands/mod.rs",
-      "sha256": "6c8329006bfd7436b4596a25ac8141db89051711fee8ddb3d66fd2e0b7cb2ea8",
-      "size": 2565
+      "sha256": "7cabfb599bc970f6f045a0e29f00da1d695a8d909a29ce565eec74a1ea854e97",
+      "size": 2586
     },
     {
       "mode": "100644",
@@ -4338,8 +4362,8 @@
     {
       "mode": "100644",
       "path": "src-tauri/src/hall/members/codex_bridge.rs",
-      "sha256": "7d96c8b9b9967e7a821f1ebe2f16da748148656a181fda312a9297c15bed1e03",
-      "size": 35694
+      "sha256": "9b852c90a0b100babbebb4a68ca443495c87f0f2ffe9ce6ea1f03a55caa708b8",
+      "size": 43802
     },
     {
       "mode": "100644",
@@ -4878,8 +4902,8 @@
     {
       "mode": "100644",
       "path": "src-tauri/src/lib.rs",
-      "sha256": "3f38212f838a07459a1840f93384b3601a6daddd54c4ac141f1467f8695e599d",
-      "size": 133292
+      "sha256": "4ebc88f96240515999dd476cb96b3782bfae5019767a8b6dbb0730c140548b15",
+      "size": 133493
     },
     {
       "mode": "100644",
@@ -5393,6 +5417,12 @@
     },
     {
       "mode": "100644",
+      "path": "src-tauri/src/web/handlers/acp_adapter.rs",
+      "sha256": "fb8e7031618ae68e1a6ec07f23be3c6eef17e67c90b4c7360137f2c6f3ec603d",
+      "size": 1372
+    },
+    {
+      "mode": "100644",
       "path": "src-tauri/src/web/handlers/app_update.rs",
       "sha256": "a8e4cff6e63de29f7f828d98207aef1b808ed3fc2ecde88f9a8a3322786b2af5",
       "size": 17501
@@ -5592,8 +5622,8 @@
     {
       "mode": "100644",
       "path": "src-tauri/src/web/handlers/mod.rs",
-      "sha256": "b34d992fb7a9f0f8387c837be2e6cc20418e4e8e6fb4e29393ff6e95beee37e8",
-      "size": 1053
+      "sha256": "7a953aafaee815bedc08efb5e64d02879af9bdd055b19667c9a2f3abfb4f0c92",
+      "size": 1074
     },
     {
       "mode": "100644",
@@ -5730,8 +5760,8 @@
     {
       "mode": "100644",
       "path": "src-tauri/src/web/router.rs",
-      "sha256": "4cb4d781c9c87ebf831b747775746af99c9d4d427d075b02e290b2c2d6b18fa4",
-      "size": 82418
+      "sha256": "7c53911586e38880506af684dc063ee1018ae424f693bfeb7da1d0ad06335a9b",
+      "size": 82790
     },
     {
       "mode": "100644",
@@ -5796,7 +5826,7 @@
     {
       "mode": "100644",
       "path": "src-tauri/tauri.conf.json",
-      "sha256": "9b5318ec516556f9d5d7418d19b1fae0d4a953bf0cee162d70001fcc9baa24b0",
+      "sha256": "fa99f33889c6bd9462f8c770b915209ca34997c1077419d5c5f0a9b5a5999142",
       "size": 1598
     },
     {
@@ -9275,6 +9305,12 @@
     },
     {
       "mode": "100644",
+      "path": "src/components/layout/hall-workspace-shell-branch.test.tsx",
+      "sha256": "725e549dcd361ad9263a355754a1650288911ebb6b4488eefdddc2b3d509193a",
+      "size": 6047
+    },
+    {
+      "mode": "100644",
       "path": "src/components/layout/hall-workspace-shell-persistence.test.tsx",
       "sha256": "a9750e9e29fabe7cf0515834ee2a6867c369faa8841856fbac209ed6c84c716b",
       "size": 6634
@@ -9288,8 +9324,8 @@
     {
       "mode": "100644",
       "path": "src/components/layout/hall-workspace-shell.tsx",
-      "sha256": "4f387f8da84df8e107170936015737061a3b992b0464a8d64e4039200dd07bac",
-      "size": 20745
+      "sha256": "f9a55cb14a0e537d39d7c60a98beb5ab1f7d579384298dc71d6283dfa3d9e473",
+      "size": 22014
     },
     {
       "mode": "100644",
@@ -10601,6 +10637,18 @@
     },
     {
       "mode": "100644",
+      "path": "src/components/settings/acp-adapter-runtime-card.test.tsx",
+      "sha256": "cac88564446faba1027867b6e3f468a47d6b1c983d189d3e9672666e067447b6",
+      "size": 5119
+    },
+    {
+      "mode": "100644",
+      "path": "src/components/settings/acp-adapter-runtime-card.tsx",
+      "sha256": "a9ad1974879e74329939302d9b16c361dc70fae1c4e064751009e78b243156c0",
+      "size": 4410
+    },
+    {
+      "mode": "100644",
       "path": "src/components/settings/acp-agent-settings.codex-config.test.ts",
       "sha256": "dba30fd5a18f943c8c123cc32bb2535ad299d933c1a616b8e2fd088f1f178bab",
       "size": 8297
@@ -10662,8 +10710,8 @@
     {
       "mode": "100644",
       "path": "src/components/settings/acp-agent-settings.tsx",
-      "sha256": "93baf13ac194369d92472f7bdd438a7a6de7d292d8c76aaeaa2bd50f44fb9df7",
-      "size": 527359
+      "sha256": "a14ae6b7f9530b93db8d6fd4366bb818bc88e512aa55990e890a0e0e48211d6e",
+      "size": 527737
     },
     {
       "mode": "100644",
@@ -12456,14 +12504,14 @@
     {
       "mode": "100644",
       "path": "src/contexts/acp-connections-context.test.tsx",
-      "sha256": "897da710d3d68c66bf574fa06e14621cfeffb6e8be02ad399d17a789b2066a79",
-      "size": 313142
+      "sha256": "e84d4964df317a0ae9fa3b340e2364a46351f0ad056e169cc827f06da7e4bd94",
+      "size": 314046
     },
     {
       "mode": "100644",
       "path": "src/contexts/acp-connections-context.tsx",
-      "sha256": "ac47673964ba07e958fd4a0c713828227864c46d846dbb87cbbef486fcee11e6",
-      "size": 346283
+      "sha256": "f4104dcd69acf24af2335d3d9b544f8a1dbaae8bc331f5d1d40020913bac25bf",
+      "size": 346531
     },
     {
       "mode": "100644",
@@ -13254,62 +13302,62 @@
     {
       "mode": "100644",
       "path": "src/i18n/messages/ar.json",
-      "sha256": "09b29475ec3fd348b9006703d7d27a95423a3deefb3fa13bfa3a18608aa62193",
-      "size": 574313
+      "sha256": "88f4720d0e854993592286d2efd51e440f92f4d4ef325e89340e32df2a4e6d6f",
+      "size": 575641
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/de.json",
-      "sha256": "e05f54ef0f1293f7f6ebb09d307b28af1b88570e092816b96e0dac1a7842b582",
-      "size": 485602
+      "sha256": "8874a03c2d0752b2959811d6468b97603d73e9f06fa2032698d4867e1a61bdc7",
+      "size": 486731
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/en.json",
-      "sha256": "32cc33bcd46a91b297e1d7388a0a2693f82c033f480064ee1b40c5ea9cb8da18",
-      "size": 434203
+      "sha256": "9d6339bf678709ede83bfa693254fb5abdf1ef1b5f071d3f75beb8bf915c410f",
+      "size": 435192
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/es.json",
-      "sha256": "f7a32fba3ddfc9652b089902bf772f217f248a4dea69d42c3b54a498b061b695",
-      "size": 479258
+      "sha256": "0c8f1f61bd23e3cf4b5e25def54897cf90cc7effd6b3b44d27a967ad3661e3df",
+      "size": 480302
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/fr.json",
-      "sha256": "42c6b6ea56cf105e22714df1c72aa6755984447de068fc4125874ee236577d79",
-      "size": 496015
+      "sha256": "c5568ce5d8d9b64c3b25b28c167d156c08580c720d67c4cc688b91d2a7fa9c05",
+      "size": 497110
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/ja.json",
-      "sha256": "987f9dfbe5ad2e8436ca7b152c0b6936251c492bd5120df0dbec6aaa7b25a30b",
-      "size": 547660
+      "sha256": "d188debbc15ec472008de2529c1b0de2ba1e8af2b788a0e772f9e1e1903bffe2",
+      "size": 548955
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/ko.json",
-      "sha256": "098a9062c53b09b7b3b19a42aa2442180d0e08f7e85e2d0c3e4c70c386d98517",
-      "size": 495012
+      "sha256": "6019043e3ea1f35d602310ffe6e7ba9abaea08372188a50bc3a8ca79fa5a8b62",
+      "size": 496168
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/pt.json",
-      "sha256": "3919a93ace925bffdd08afec6b15028751d5ffa060a25d0fc452a1d7fc7df1fc",
-      "size": 474379
+      "sha256": "8d97e55cf24d719b3f177c0dcbe5032abfefa252cfde9ce287aa16315d0835ff",
+      "size": 475437
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/zh-CN.json",
-      "sha256": "daaab138a904bafd9555fdb7aba4d4b417705ac2a875924debc61575c014f10a",
-      "size": 422631
+      "sha256": "bb394b13c152f1f609e418d0c754c0aa80f5e8fff204f4b4b93f447c1b9fb670",
+      "size": 423616
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/zh-TW.json",
-      "sha256": "0292e2b79dc55e4a7ceefa2234cf8e700dafbb40bfa1b3090c4a7b9337a42a1b",
-      "size": 425734
+      "sha256": "24accf535fe33b0b62309c11922122842ead6dd66e7be01dc1cba970c01a41f7",
+      "size": 426722
     },
     {
       "mode": "100644",
@@ -13668,8 +13716,8 @@
     {
       "mode": "100644",
       "path": "src/lib/api.ts",
-      "sha256": "04e0a2e32872cd12d288ecc556d2091a3d35bafb66c8db71585e75b5c3767f77",
-      "size": 209028
+      "sha256": "be7aebcfa2b7d7d10fea7f5f2aacad5ca6f356161c0772fddc1a55e01fcb4862",
+      "size": 209920
     },
     {
       "mode": "100644",
@@ -16392,8 +16440,8 @@
     {
       "mode": "100644",
       "path": "src/lib/types.ts",
-      "sha256": "8dd8ac4e310c6136f287f367074c500c604f05c8f22b57186534733d1b95c6a3",
-      "size": 201461
+      "sha256": "99df66417b6bdd2b89777765407e220c278ce38a708dcda3fb2ccfd84280af33",
+      "size": 202032
     },
     {
       "mode": "100644",

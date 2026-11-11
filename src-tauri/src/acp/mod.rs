@@ -1,3 +1,6 @@
+pub mod adapter_cli;
+pub mod adapter_probe;
+pub mod adapter_store;
 pub mod agent_mentions;
 pub mod air_contract;
 pub mod agent_process;

@@ -83,6 +83,8 @@ import type {
   PlanApprovalAnswer,
   AcpAgentInfo,
   AcpAgentStatus,
+  AdapterStatus,
+  AdapterUpgradeOutcome,
   AgentLatestRelease,
   AgentDiagnosticsReport,
   GrokStructuredConfig,
@@ -613,6 +615,32 @@ export async function acpFetchAgentLatestRelease(
   agentType: AgentType
 ): Promise<AgentLatestRelease | null> {
   return getTransport().call("acp_fetch_agent_latest_release", { agentType })
+}
+
+/** Adapter and bundled-CLI versions behind a Claude Code / Codex agent. */
+export async function acpAdapterStatus(
+  agentType: AgentType
+): Promise<AdapterStatus> {
+  return getTransport().call("acp_adapter_status", { agentType })
+}
+
+/**
+ * Install an adapter version beside the current one, start it once as a
+ * check, and switch only if that works. `null` means the newest published
+ * version. Takes up to a few minutes.
+ */
+export async function acpAdapterUpgrade(
+  agentType: AgentType,
+  version: string | null
+): Promise<AdapterUpgradeOutcome> {
+  return getTransport().call("acp_adapter_upgrade", { agentType, version })
+}
+
+/** Swap back to the previous adapter version. */
+export async function acpAdapterRollback(
+  agentType: AgentType
+): Promise<AdapterStatus> {
+  return getTransport().call("acp_adapter_rollback", { agentType })
 }
 
 export async function acpPrepareNpxAgent(

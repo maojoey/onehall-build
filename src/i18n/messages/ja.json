@@ -1863,6 +1863,25 @@
     "zcode": {
       "adapterInfo": "OneHall は {adapterPackage} を ACP ブリッジとして起動します。先に公式 ZCode をインストールしてログインしてください。既存の実行環境と設定を使用します。",
       "runtimeHint": "先に公式 ZCode をインストールしてログインしてください。OneHall は ACP ブリッジのみをインストールします。自動検出に失敗した場合は ZCODE_BIN で CLI、ZCODE_NODE で Node.js を指定できます。モデルと認証情報は ZCode で管理します。"
+    },
+    "adapterRuntime": {
+      "title": "アダプターと同梱 CLI",
+      "versions": "アダプター {adapter} · 同梱 CLI {cli}",
+      "unknown": "不明",
+      "managed": "このバージョンは OneHall がインストールし、起動テストを通過しています。",
+      "external": "npm でインストールされたコピーを使用しています。",
+      "cliNote": "OneHall はターミナルの CLI ではなく、アダプター同梱の CLI を実行します。",
+      "versionLabel": "アダプターのバージョン",
+      "versionPlaceholder": "空欄で最新、または 2.3.0 など",
+      "upgradeLatest": "最新にアップグレード（先にテスト）",
+      "installVersion": "このバージョンをインストール（先にテスト）",
+      "upgrading": "インストールとテスト中…",
+      "rollback": "{version} に戻す",
+      "upgraded": "{version} に切り替えました。",
+      "upgradedNeedsLogin": "{version} に切り替えました。正常に起動し、ログイン待ちです。",
+      "upgradeFailed": "アップグレードに失敗しました: {message}",
+      "rolledBack": "{version} に戻しました。",
+      "rollbackFailed": "ロールバックに失敗しました: {message}"
     }
   },
   "AgentVocabulary": {

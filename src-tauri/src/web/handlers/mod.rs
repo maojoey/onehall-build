@@ -1,4 +1,5 @@
 pub mod acp;
+pub mod acp_adapter;
 pub mod app_update;
 pub mod assistants;
 pub mod automation;

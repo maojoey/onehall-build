@@ -1203,6 +1203,18 @@ pub fn build_router_with_proxy_auth(
             post(handlers::acp::acp_fetch_agent_latest_release),
         )
         .route(
+            "/acp_adapter_status",
+            post(handlers::acp_adapter::acp_adapter_status),
+        )
+        .route(
+            "/acp_adapter_upgrade",
+            post(handlers::acp_adapter::acp_adapter_upgrade),
+        )
+        .route(
+            "/acp_adapter_rollback",
+            post(handlers::acp_adapter::acp_adapter_rollback),
+        )
+        .route(
             "/acp_prepare_npx_agent",
             post(handlers::acp::acp_prepare_npx_agent),
         )

@@ -4128,6 +4128,24 @@ export interface AgentLatestRelease {
   version: string
 }
 
+// Managed ACP adapter (claude-agent-acp / codex-acp): which version launches,
+// which CLI it carries, and what an upgrade can roll back to.
+export interface AdapterStatus {
+  /** True when launches use a version OneHall installed and tested itself. */
+  managed: boolean
+  adapter_version: string | null
+  cli_version: string | null
+  current: string | null
+  previous: string | null
+  installed_versions: string[]
+}
+
+export interface AdapterUpgradeOutcome {
+  version: string
+  previous: string | null
+  probe: { ok: boolean; needs_login: boolean; detail: string }
+}
+
 // Lightweight agent status returned by acp_get_agent_status
 export interface AcpAgentStatus {
   agent_type: AgentType

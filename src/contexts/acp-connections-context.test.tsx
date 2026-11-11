@@ -1009,6 +1009,30 @@ describe("OneHall workspace return", () => {
     expect(h.acpDisconnect).toHaveBeenCalledWith("spawned-conn")
   })
 
+  it("does not show a reclaimed engine as connecting while its snapshot is in flight", async () => {
+    await ownLeaveAndReturn()
+    // No snapshot has arrived yet: the engine was already running, so the
+    // surface must not fall back to the "connecting" state (T10b).
+    expect(h.store!.getConnection(TAB)?.status).toBe("connected")
+  })
+
+  it("still shows a plain viewer attach as connecting until its snapshot lands", async () => {
+    useHallWorkspaceStore.setState({
+      enabled: true,
+      tabs: [localTab("本机")],
+      activeKey: "local",
+    })
+    h.acpFindConnectionForConversation.mockResolvedValue({
+      connection_id: "someone-elses-conn",
+      event_seq: 3,
+    })
+    await mountProvider()
+    await act(async () => {
+      await h.actions!.connect(TAB, "claude_code", "/tmp/x", "sess-1", 42)
+    })
+    expect(h.store!.getConnection(TAB)?.status).toBe("connecting")
+  })
+
   it("catches up a reply that continued in the background exactly once", async () => {
     await ownLeaveAndReturn()
     const handlers = latestAttachHandlers()

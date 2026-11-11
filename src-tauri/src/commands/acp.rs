@@ -399,6 +399,14 @@ async fn prewarm_uvx_agent(
     Ok(())
 }
 
+/// The command of a managed adapter version (see [`crate::acp::adapter_store`]).
+/// It outranks PATH and global npm copies, so an upgrade or rollback made in
+/// Agent Settings is what a launch actually runs.
+fn managed_adapter_command(cmd: &str) -> Option<PathBuf> {
+    let kind = crate::acp::adapter_cli::AdapterKind::for_command(cmd)?;
+    crate::acp::adapter_store::managed_command(&crate::acp::adapter_store::default_root(), kind)
+}
+
 /// Resolve a command the way an npx agent's command resolves, short of the
 /// agent-specific last step [`resolve_npx_command_for`] adds: PATH, then
 /// `~/.local/bin` (both via [`resolve_system_agent_binary`]), then the current
@@ -412,6 +420,9 @@ async fn prewarm_uvx_agent(
 /// in `acp/registry.rs`. [`NpxCommandResolver::resolve_cmd`] must keep the
 /// same order.
 pub(crate) async fn resolve_npx_command(cmd: &str) -> Option<PathBuf> {
+    if let Some(path) = managed_adapter_command(cmd) {
+        return Some(path);
+    }
     if let Some(path) = resolve_system_agent_binary(cmd) {
         return Some(path);
     }
@@ -500,6 +511,9 @@ impl NpxCommandResolver {
     }
 
     async fn resolve_cmd(&mut self, cmd: &str) -> Option<PathBuf> {
+        if let Some(path) = managed_adapter_command(cmd) {
+            return Some(path);
+        }
         if let Some(cached) = self.per_cmd_cache.get(cmd) {
             return cached.clone();
         }
@@ -718,6 +732,18 @@ pub(crate) async fn verify_agent_installed(agent_type: AgentType) -> Result<(), 
 /// `pub(crate)` so env diagnostics can report the installed version it sees
 /// (which covers both prefixes, unlike the connect-gate `resolve_npx_command`).
 pub(crate) async fn detect_npm_global_version(package_name: &str) -> Option<String> {
+    // A managed adapter version is the one that launches, so it is the one to report.
+    let root = crate::acp::adapter_store::default_root();
+    for kind in [
+        crate::acp::adapter_cli::AdapterKind::Codex,
+        crate::acp::adapter_cli::AdapterKind::Claude,
+    ] {
+        if kind.npm_package() == package_name {
+            if let Some(current) = crate::acp::adapter_store::pointers(&root, kind).current {
+                return Some(current);
+            }
+        }
+    }
     let npm_path = which::which("npm").ok()?;
 
     // Try the default global prefix first.

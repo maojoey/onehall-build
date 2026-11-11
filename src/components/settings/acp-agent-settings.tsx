@@ -141,6 +141,10 @@ import {
 } from "@/components/settings/opencode-connect-dialog"
 import { OpenCodeBehaviorSection } from "@/components/settings/opencode-behavior-section"
 import { OpenCodePermissionsSection } from "@/components/settings/opencode-permissions-section"
+import {
+  AcpAdapterRuntimeCard,
+  hasManagedAdapter,
+} from "@/components/settings/acp-adapter-runtime-card"
 import { AgentDiagnosticsDialog } from "@/components/settings/agent-diagnostics-dialog"
 import {
   buildConnectedModelOptions,
@@ -8634,6 +8638,12 @@ export function AcpAgentSettings() {
                         <div ref={installLogEndRef} />
                       </div>
                     )}
+                  {hasManagedAdapter(selectedAgent.agent_type) && (
+                    <AcpAdapterRuntimeCard
+                      key={selectedAgent.agent_type}
+                      agentType={selectedAgent.agent_type}
+                    />
+                  )}
                 </div>
 
                 <div className="space-y-2">

@@ -7,9 +7,8 @@
 //! NOT the `codex` on PATH (often an unrelated standalone install of a different
 //! version, and the version that gets hoisted to the top-level `node_modules`).
 //!
-//! We resolve it with node's own nearest-`node_modules`-first resolution
-//! (`require.resolve('@openai/codex/bin/codex.js', {paths:[<codex-acp dir>]})`),
-//! run `codex debug models --bundled`, and cache the JSON on disk with a
+//! We resolve it with the same nearest-`node_modules`-first lookup node uses
+//! ([`crate::acp::adapter_cli`]), run `codex debug models --bundled`, and cache the JSON on disk with a
 //! live → cache → bundled-snapshot fallback chain, mirroring
 //! [`crate::acp::opencode_catalog`]. Infallible by construction: the compiled-in
 //! snapshot ([`crate::acp::codex_model_catalog::bundled_snapshot_models`])
@@ -19,14 +18,16 @@
 //! so both the async editor path and the **synchronous** config-write paths can
 //! reach it with zero `data_dir` threading.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
 use serde_json::Value;
 
+use crate::acp::adapter_cli::{candidate_package_dirs, inspect_adapter, AdapterKind};
+
 /// On-disk cache freshness window — matches the OpenCode catalog cache.
 const CACHE_TTL: Duration = Duration::from_secs(24 * 60 * 60);
-/// Upper bound on each codex subprocess (node resolve + `debug models`).
+/// Upper bound on each codex subprocess (`debug models`).
 const CODEX_TIMEOUT: Duration = Duration::from_secs(15);
 
 fn cache_path() -> PathBuf {
@@ -78,62 +79,14 @@ fn write_cache(models: &[Value]) {
     }
 }
 
-/// The codex-acp package directory under an npm prefix, where the nested
-/// `@openai/codex` codex-acp actually drives lives.
-fn codex_acp_dir(prefix: &Path) -> PathBuf {
-    let base = if cfg!(windows) {
-        prefix.join("node_modules")
-    } else {
-        prefix.join("lib").join("node_modules")
-    };
-    base.join("@agentclientprotocol").join("codex-acp")
-}
-
-/// Candidate codex-acp package dirs: the global npm prefix and codeg's user
-/// prefix (`~/.codeg/npm-global`, used when a global install hit EACCES).
-async fn codex_acp_dirs() -> Vec<PathBuf> {
-    let mut dirs = Vec::new();
-    if let Some(prefix) = crate::commands::acp::cached_npm_global_prefix().await {
-        dirs.push(codex_acp_dir(&prefix));
-    }
-    if let Some(prefix) = crate::process::user_npm_prefix() {
-        dirs.push(codex_acp_dir(&prefix));
-    }
-    dirs
-}
-
-/// Resolve the nested `@openai/codex/bin/codex.js` from a codex-acp package dir
-/// using node's own resolver (nearest `node_modules` first) so we get the
-/// version codex-acp uses, not a hoisted/PATH one.
-async fn resolve_codex_js(acp_dir: &Path, node: &Path) -> Option<PathBuf> {
-    let mut cmd = crate::process::tokio_command(node);
-    cmd.arg("-e")
-        .arg("process.stdout.write(require.resolve('@openai/codex/bin/codex.js',{paths:[process.argv[1]]}))")
-        .arg(acp_dir)
-        .kill_on_drop(true);
-    let output = tokio::time::timeout(CODEX_TIMEOUT, cmd.output())
-        .await
-        .ok()?
-        .ok()?;
-    if !output.status.success() {
-        return None;
-    }
-    let resolved = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if resolved.is_empty() {
-        return None;
-    }
-    let path = PathBuf::from(resolved);
-    path.exists().then_some(path)
-}
-
 /// Run the nested codex's `debug models --bundled` and return its `models`.
 async fn fetch_live() -> Option<Vec<Value>> {
     let node = which::which("node").ok()?;
-    for acp_dir in codex_acp_dirs().await {
-        if !acp_dir.exists() {
-            continue;
-        }
-        let Some(codex_js) = resolve_codex_js(&acp_dir, &node).await else {
+    for acp_dir in candidate_package_dirs(AdapterKind::Codex).await {
+        let Some(codex_js) = inspect_adapter(&acp_dir, AdapterKind::Codex)
+            .and_then(|runtime| runtime.cli)
+            .map(|cli| cli.path)
+        else {
             continue;
         };
         let mut cmd = crate::process::tokio_command(&node);

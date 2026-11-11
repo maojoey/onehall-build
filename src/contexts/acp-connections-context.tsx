@@ -596,6 +596,9 @@ type Action =
       // Set when attaching to a connection another client owns (viewer).
       // Defaults to false (owner) when omitted.
       isViewer?: boolean
+      // Defaults to `connecting`. A reclaimed engine is already running, so it
+      // starts as `connected` until its snapshot says otherwise.
+      status?: ConnectionStatus
     }
   | {
       type: "HYDRATE_FROM_SNAPSHOT"
@@ -1927,7 +1930,7 @@ function connectionsReducer(
         contextKey: action.contextKey,
         agentType: action.agentType,
         workingDir: action.workingDir,
-        status: "connecting",
+        status: action.status ?? "connecting",
         promptCapabilities: {
           image: false,
           audio: false,
@@ -7069,6 +7072,7 @@ export function AcpConnectionsProvider({ children }: { children: ReactNode }) {
         agentType,
         workingDir,
         isViewer: !reclaimed,
+        status: reclaimed ? "connected" : undefined,
       })
       lastActivityRef.current.set(contextKey, Date.now())
 
