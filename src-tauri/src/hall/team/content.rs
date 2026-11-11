@@ -7,6 +7,7 @@ use crate::{
     hall::{
         exchange::{
             runtime::current_owner, AttemptOwner, ExchangeError, ExitVerification, ObjectRef,
+            OutputTarget,
         },
         tasks::runtime::authority::Actor,
     },
@@ -160,6 +161,11 @@ impl TeamService {
         let exchange = self.exchange.get().ok_or_else(denied)?;
         let (owner, _) = self.attached_run(a).await?;
         exchange.list_inputs(&owner).await.map_err(exchange_error)
+    }
+    pub(super) async fn list_outputs(&self, a: &Actor) -> Result<Vec<OutputTarget>, AppCommandError> {
+        let exchange = self.exchange.get().ok_or_else(denied)?;
+        let (owner, _) = self.attached_run(a).await?;
+        exchange.list_outputs(&owner).await.map_err(exchange_error)
     }
     pub(super) async fn read_input(
         &self,

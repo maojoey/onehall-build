@@ -2013,6 +2013,7 @@ mod tauri_app {
                 windows::open_project_boot_window,
                 windows::open_import_sessions_window,
                 windows::open_local_workspace,
+                remote_workspace_commands::get_local_machine_name,
                 remote_workspace_commands::list_remote_workspace_connections,
                 remote_workspace_commands::create_remote_workspace_connection,
                 remote_workspace_commands::update_remote_workspace_connection,

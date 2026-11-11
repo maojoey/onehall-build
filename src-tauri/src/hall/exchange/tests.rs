@@ -160,6 +160,13 @@ async fn upload_confirmation_replay_is_immutable_and_rejects_incomplete_bytes() 
             .confirm_input(&f.admin, &f.submission, &t.object_id)
             .await
             .is_err());
+        assert_eq!(
+            std::fs::read_dir(f._dir.path().join("exchange/blobs"))
+                .unwrap()
+                .count(),
+            0,
+            "rejected bodies leave no blob, even before a later request runs"
+        );
     }
     let first = f
         .store
@@ -818,11 +825,13 @@ async fn abandoned_temporary_bytes_are_not_confirmed_after_store_reopen() {
         )
         .await
         .unwrap();
-    std::fs::write(
-        f._dir.path().join("exchange/temporary").join(uid()),
-        CONTENT,
-    )
-    .unwrap();
+    // Windows receives under an ungranted blob name, avoiding a rename of
+    // a pinned ancestor. Bytes there still confer no database grant.
+    #[cfg(unix)]
+    let staging = "exchange/temporary";
+    #[cfg(windows)]
+    let staging = "exchange/blobs";
+    std::fs::write(f._dir.path().join(staging).join(uid()), CONTENT).unwrap();
     #[cfg(unix)]
     let root = f._dir.path().canonicalize().unwrap().join("exchange");
     #[cfg(windows)]

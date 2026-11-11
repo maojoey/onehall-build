@@ -313,3 +313,28 @@ fn published_contract_samples_parse_with_the_real_types() {
     let caps: Value = serde_json::from_str(&read("capabilities.json")).unwrap();
     assert_eq!(caps["protocolVersion"], 2);
 }
+
+#[tokio::test]
+async fn failed_store_initialization_neither_advertises_nor_accepts_v2() {
+    let host = Host::new().await;
+    let blocked = host._dir.path().join("not-a-directory");
+    std::fs::write(&blocked, b"not a data directory").unwrap();
+    let unavailable = crate::hall::exchange::service::open_default(host.db.clone(), &blocked);
+    assert!(unavailable.is_none());
+    let issuer = trust::create_local(&host.db, "HQ").await.unwrap();
+    let server = TestServer::new(dispatch_wire::routes(host.db.clone(), unavailable)).unwrap();
+    let token = format!("{}.{}", issuer.issuer_id, issuer.secret);
+    server
+        .get("/hall-dispatch/v2/capabilities")
+        .authorization_bearer(&token)
+        .await
+        .assert_status_not_found();
+    let (_, manifest) = host.manifest(CONTENT).await;
+    let id = uid();
+    server
+        .post("/hall-dispatch/v2/inbox")
+        .authorization_bearer(&token)
+        .json(&envelope(&id, &uid(), &manifest))
+        .await
+        .assert_status_not_found();
+}

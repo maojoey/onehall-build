@@ -38,6 +38,8 @@ pub enum ToolRequest {
     Report { submission_id: String, body: String },
     #[serde(rename = "hall_list_inputs")]
     ListInputs {},
+    #[serde(rename = "hall_list_outputs")]
+    ListOutputs {},
     #[serde(rename = "hall_read_input", rename_all = "camelCase")]
     ReadInput {
         object_id: String,
@@ -296,6 +298,7 @@ impl TeamService {
                 )
             }
             ToolRequest::ListInputs {} => encode(self.list_inputs(a).await?),
+            ToolRequest::ListOutputs {} => encode(self.list_outputs(a).await?),
             ToolRequest::ReadInput {
                 object_id,
                 offset,

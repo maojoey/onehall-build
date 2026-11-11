@@ -39,7 +39,10 @@ import {
   forgetParkedOwnerships,
   forgetPendingBackendTabs,
 } from "@/lib/hall/workspace-lifetime"
-import { listRemoteWorkspaceConnections } from "@/lib/remote-workspace"
+import {
+  getLocalMachineName,
+  listRemoteWorkspaceConnections,
+} from "@/lib/remote-workspace"
 import type { RemoteWorkspaceConnection } from "@/lib/types"
 import { RemoteConnectionGate } from "@/contexts/remote-connection-context"
 import {
@@ -125,10 +128,17 @@ function DesktopHallWorkspaceShell({ children }: { children: ReactNode }) {
                 }
               : {}),
           }))
+        const machine = await getLocalMachineName().catch(() => "")
+        if (cancelled) return
         const store = useHallWorkspaceStore.getState()
         useHallWorkspaceStore.setState({ webMode: false })
         store.hydrate(
-          [localTab(t("tabs.local")), ...remotes],
+          [
+            localTab(
+              machine ? `${t("tabs.local")} · ${machine}` : t("tabs.local")
+            ),
+            ...remotes,
+          ],
           persisted?.activeKey ?? LOCAL_BACKEND_KEY
         )
         store.setEnabled(true)
@@ -431,14 +441,20 @@ export function HallWorkspaceTabBar() {
           const isActive = tab.key === activeKey
           const h = health[tab.key] ?? EMPTY_HEALTH
           const isRemote = tab.remoteConnectionId !== null || !!tab.branchId
+          const isLocal = !isRemote && !web
           return (
             <div
               key={tab.key}
               className={cn(
                 "my-1 flex max-w-60 items-center gap-1.5 rounded-md border px-2",
+                isLocal && "border-primary/30 bg-primary/10 text-primary",
                 isActive
-                  ? "border-border bg-background font-medium text-foreground"
-                  : "border-transparent text-muted-foreground hover:bg-background/60 hover:text-foreground"
+                  ? isLocal
+                    ? "border-primary/60 bg-primary/15 font-semibold"
+                    : "border-border bg-background font-medium text-foreground"
+                  : isLocal
+                    ? "hover:bg-primary/15"
+                    : "border-transparent text-muted-foreground hover:bg-background/60 hover:text-foreground"
               )}
             >
               <button
@@ -508,10 +524,6 @@ export function HallWorkspaceTabBar() {
             </div>
           )
         })}
-        <HallBranchDirectory
-          headquartersConnectionId={headquartersConnectionId}
-          web={web}
-        />
         {!web && (
           <DropdownMenu
             onOpenChange={(open) => open && void refreshConnections()}
@@ -555,6 +567,10 @@ export function HallWorkspaceTabBar() {
             </DropdownMenuContent>
           </DropdownMenu>
         )}
+        <HallBranchDirectory
+          headquartersConnectionId={headquartersConnectionId}
+          web={web}
+        />
       </nav>
       {!web && (
         <RemoteWorkspaceManageDialog

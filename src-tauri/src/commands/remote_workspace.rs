@@ -92,6 +92,15 @@ pub(crate) async fn validate_remote_health(
     Ok(())
 }
 
+/// The computer's own name, shown on the local tab so it can be told apart from
+/// the remote ones. macOS reports `Name.local`; the suffix says nothing useful.
+#[cfg(feature = "tauri-runtime")]
+#[cfg_attr(feature = "tauri-runtime", tauri::command)]
+pub async fn get_local_machine_name() -> String {
+    let raw = gethostname::gethostname().to_string_lossy().into_owned();
+    raw.strip_suffix(".local").map(str::to_owned).unwrap_or(raw)
+}
+
 #[cfg(feature = "tauri-runtime")]
 #[cfg_attr(feature = "tauri-runtime", tauri::command)]
 pub async fn list_remote_workspace_connections(

@@ -11,7 +11,7 @@ pub mod service;
 mod store;
 mod types;
 pub use store::{
-    DispatchBinding, DispatchInput, Exchange, MaterializedAttempt, PreparedArtifact, ReceivedArtifact,
+    DispatchBinding, DispatchInput, Exchange, MaterializedAttempt, OutputTarget, PreparedArtifact, ReceivedArtifact,
     ReceivedInput, SealPreparation,
 };
 pub use types::*;

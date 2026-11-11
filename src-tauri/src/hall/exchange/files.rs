@@ -107,8 +107,10 @@ impl Directory {
             let Some(Component::Prefix(prefix)) = parts.next() else {
                 return Err(ExchangeError::Invalid);
             };
-            if !matches!(prefix.kind(), std::path::Prefix::Disk(_))
-                || parts.next() != Some(Component::RootDir)
+            if !matches!(
+                prefix.kind(),
+                std::path::Prefix::Disk(_) | std::path::Prefix::VerbatimDisk(_)
+            ) || parts.next() != Some(Component::RootDir)
             {
                 return Err(ExchangeError::Invalid);
             }
@@ -193,6 +195,49 @@ impl Directory {
             open_windows(&self.path.join(name), directory, create)
         }
     }
+    /// Only for atomic desktop download publication. A pinned child keeps
+    /// this leaf nonempty, so Windows refuses FSCTL_SET_REPARSE_POINT while
+    /// MoveFileExW opens the leaf for write. DELETE sharing stays denied;
+    /// ancestors keep their original strict handles throughout cleanup.
+    #[cfg(windows)]
+    pub(super) fn publication_guard(self: Arc<Self>) -> std::io::Result<PublicationGuard> {
+        use windows_sys::Win32::Storage::FileSystem::{FILE_SHARE_READ, FILE_SHARE_WRITE};
+        let mut directory = Arc::try_unwrap(self)
+            .map_err(|_| std::io::Error::other("Download directory is still shared"))?;
+        directory.validate().map_err(std::io::Error::other)?;
+        let guard = tempfile::Builder::new()
+            .prefix(".onehall-publish-")
+            .tempdir_in(&directory.path)?;
+        let name = guard
+            .path()
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| std::io::Error::other("Invalid publication guard"))?;
+        let pin = directory
+            .open(name, true, false)
+            .map_err(std::io::Error::other)?;
+        let leaf = open_windows_shared(
+            &directory.path,
+            true,
+            false,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+        )
+        .map_err(std::io::Error::other)?;
+        if stamp(&leaf, false).map_err(std::io::Error::other)?.identity
+            != stamp(&directory.file, false)
+                .map_err(std::io::Error::other)?
+                .identity
+        {
+            return Err(std::io::Error::other("Download directory changed"));
+        }
+        directory.file = leaf;
+        Ok(PublicationGuard {
+            _guard: guard,
+            _directory: directory,
+            pin: Some(pin),
+        })
+    }
+
     pub(super) fn validate(&self) -> Result<()> {
         if let Some(parent) = &self.parent {
             parent.validate()?;
@@ -223,6 +268,7 @@ impl Directory {
             let _ = std::fs::remove_file(self.path.join(name));
         }
     }
+    #[cfg(unix)]
     fn publish(&self, name: &str, destination: &Directory, new_name: &str) -> Result<()> {
         self.validate()?;
         destination.validate()?;
@@ -250,29 +296,6 @@ impl Directory {
                 return Err(ExchangeError::Storage);
             }
         }
-        #[cfg(windows)]
-        {
-            use std::os::windows::ffi::OsStrExt;
-            use windows_sys::Win32::Storage::FileSystem::{MoveFileExW, MOVEFILE_WRITE_THROUGH};
-            let old: Vec<u16> = self
-                .path
-                .join(name)
-                .as_os_str()
-                .encode_wide()
-                .chain(Some(0))
-                .collect();
-            let new: Vec<u16> = destination
-                .path
-                .join(new_name)
-                .as_os_str()
-                .encode_wide()
-                .chain(Some(0))
-                .collect();
-            // No MOVEFILE_REPLACE_EXISTING. All ancestors stay pinned.
-            if unsafe { MoveFileExW(old.as_ptr(), new.as_ptr(), MOVEFILE_WRITE_THROUGH) } == 0 {
-                return Err(ExchangeError::Storage);
-            }
-        }
         destination.sync()?;
         self.sync()?;
         Ok(())
@@ -280,15 +303,20 @@ impl Directory {
 }
 #[cfg(windows)]
 fn open_windows(path: &Path, directory: bool, create: bool) -> Result<File> {
+    use windows_sys::Win32::Storage::FileSystem::FILE_SHARE_READ;
+    open_windows_shared(path, directory, create, FILE_SHARE_READ)
+}
+#[cfg(windows)]
+fn open_windows_shared(path: &Path, directory: bool, create: bool, sharing: u32) -> Result<File> {
     use std::os::windows::fs::OpenOptionsExt;
     use windows_sys::Win32::Storage::FileSystem::{
-        FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, FILE_SHARE_READ,
+        FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT,
     };
     let file = OpenOptions::new()
         .read(true)
         .write(create)
         .create_new(create)
-        .share_mode(FILE_SHARE_READ)
+        .share_mode(sharing)
         .custom_flags(
             FILE_FLAG_OPEN_REPARSE_POINT
                 | if directory {
@@ -303,15 +331,32 @@ fn open_windows(path: &Path, directory: bool, create: bool) -> Result<File> {
     Ok(file)
 }
 
+#[cfg(windows)]
+pub(super) struct PublicationGuard {
+    // Fields drop in declaration order after Drop closes the child handle.
+    _guard: tempfile::TempDir,
+    _directory: Directory,
+    pin: Option<File>,
+}
+#[cfg(windows)]
+impl Drop for PublicationGuard {
+    fn drop(&mut self) {
+        self.pin.take();
+    }
+}
+
 pub(super) struct Temporary {
     directory: Arc<Directory>,
     name: String,
+    published: bool,
     pub(super) file: Option<File>,
 }
 impl Drop for Temporary {
     fn drop(&mut self) {
         self.file.take();
-        self.directory.unlink(&self.name);
+        if !self.published {
+            self.directory.unlink(&self.name);
+        }
     }
 }
 impl Temporary {
@@ -323,9 +368,26 @@ impl Temporary {
         }
         file.sync_all()?;
         readonly(&file)?;
-        drop(file); // Windows must release the no-delete file handle to rename.
-        let blob = id();
-        self.directory.publish(&self.name, blobs, &blob)?;
+        drop(file);
+        #[cfg(unix)]
+        let blob = {
+            let blob = id();
+            self.directory.publish(&self.name, blobs, &blob)?;
+            blob
+        };
+        // Windows rename reopens a pinned parent for write and fails with
+        // ERROR_SHARING_VIOLATION. Receive under an ungranted random blob name
+        // instead; only the DB transaction can grant it after this seal. Keep
+        // ancestor WRITE/DELETE sharing denied, including reparse-point writes.
+        #[cfg(windows)]
+        let blob = {
+            self.directory.validate()?;
+            blobs.validate()?;
+            if stamp(&self.directory.file, false)?.identity != stamp(&blobs.file, false)?.identity {
+                return Err(ExchangeError::Unstable);
+            }
+            self.name.clone()
+        };
         let published = blobs.open(&blob, false, false)?;
         let after = stamp(&published, true)?;
         if after.identity != before.identity
@@ -334,6 +396,7 @@ impl Temporary {
         {
             return Err(ExchangeError::Unstable);
         }
+        self.published = true;
         Ok(blob)
     }
 }
@@ -427,6 +490,7 @@ pub(super) fn copy_bounded<R: Read, W: Write>(
 pub(super) struct Layout {
     root: Arc<Directory>,
     pub(super) blobs: Arc<Directory>,
+    #[cfg(unix)]
     temporary: Arc<Directory>,
     attempts: Arc<Directory>,
     #[cfg(windows)]
@@ -447,11 +511,13 @@ impl Layout {
             crate::cli_run::discovery::prepare_dir(path).map_err(|_| ExchangeError::Storage)?;
         root.validate()?;
         let blobs = root.ensure("blobs")?;
+        #[cfg(unix)]
         let temporary = root.ensure("temporary")?;
         let attempts = root.ensure("attempts")?;
         Ok(Self {
             root,
             blobs,
+            #[cfg(unix)]
             temporary,
             attempts,
             #[cfg(windows)]
@@ -461,10 +527,15 @@ impl Layout {
     pub(super) fn temporary(&self) -> Result<Temporary> {
         self.root.validate()?;
         let name = id();
-        let file = self.temporary.open(&name, false, true)?;
+        #[cfg(unix)]
+        let directory = self.temporary.clone();
+        #[cfg(windows)]
+        let directory = self.blobs.clone();
+        let file = directory.open(&name, false, true)?;
         Ok(Temporary {
-            directory: self.temporary.clone(),
+            directory,
             name,
+            published: false,
             file: Some(file),
         })
     }
@@ -514,6 +585,26 @@ impl Layout {
             );
         }
         Ok(super::store::MaterializedAttempt { inputs, outputs })
+    }
+    pub(super) fn output_targets(
+        &self,
+        nonce: &str,
+        outputs: &[OutputSlot],
+    ) -> Result<Vec<super::store::OutputTarget>> {
+        outputs
+            .iter()
+            .map(|o| {
+                let directory = self.output_directory(nonce, &o.slot_id)?;
+                // A held Unix descriptor can survive an ancestor rename;
+                // never return its old absolute pathname to the model.
+                directory.validate()?;
+                Ok(super::store::OutputTarget {
+                    slot_id: o.slot_id.clone(),
+                    display_name: o.display_name.clone(),
+                    path: directory.path.join(&o.display_name),
+                })
+            })
+            .collect()
     }
     pub(super) fn attempt_directory(&self, nonce: &str) -> Result<Arc<Directory>> {
         uuid(nonce)?;
@@ -602,4 +693,169 @@ fn verify_private(file: &File) -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(all(test, windows))]
+mod windows_tests {
+    use super::*;
+
+    #[test]
+    fn a_verbatim_disk_path_walks_the_same_pinned_directories() {
+        let dir = tempfile::tempdir().unwrap();
+        let ordinary = Directory::absolute(dir.path()).unwrap();
+        let canonical = dir.path().canonicalize().unwrap();
+        let verbatim = Directory::absolute(&canonical).unwrap();
+        assert_eq!(
+            stamp(&ordinary.file, false).unwrap().identity,
+            stamp(&verbatim.file, false).unwrap().identity
+        );
+        assert!(Directory::absolute(Path::new(r"\\.\C:\")).is_err());
+        assert!(Directory::absolute(Path::new(r"\\server\share\")).is_err());
+    }
+
+    #[test]
+    fn directory_pins_deny_reparse_writes_and_delete_access() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let _held = Directory::absolute(dir.path()).unwrap();
+        for access in [0x40000000, 0x00010000] {
+            // GENERIC_WRITE, DELETE
+            let error = OpenOptions::new()
+                .access_mode(access)
+                .share_mode(7)
+                .custom_flags(0x02200000)
+                .open(dir.path())
+                .unwrap_err();
+            assert_eq!(error.raw_os_error(), Some(32));
+        }
+    }
+
+    #[test]
+    fn publication_keeps_the_parent_fixed_and_refuses_live_junction_injection() {
+        use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};
+        #[link(name = "kernel32")]
+        extern "system" {
+            fn DeviceIoControl(
+                handle: *mut std::ffi::c_void,
+                code: u32,
+                input: *const std::ffi::c_void,
+                length: u32,
+                output: *mut std::ffi::c_void,
+                capacity: u32,
+                returned: *mut u32,
+                overlapped: *mut std::ffi::c_void,
+            ) -> i32;
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        let publication = Directory::absolute(dir.path())
+            .unwrap()
+            .publication_guard()
+            .unwrap();
+        assert_eq!(
+            std::fs::remove_dir(publication._guard.path())
+                .unwrap_err()
+                .raw_os_error(),
+            Some(32)
+        );
+        assert_eq!(
+            std::fs::rename(dir.path(), dir.path().with_extension("moved"))
+                .unwrap_err()
+                .raw_os_error(),
+            Some(32)
+        );
+        // A real FSCTL_SET_REPARSE_POINT with a valid mount-point buffer.
+        // The leaf permits WRITE for rename, so the pinned nonempty child is
+        // what must make NTFS refuse this request (ERROR_DIR_NOT_EMPTY).
+        let print = outside.path().to_string_lossy();
+        let target = print.strip_prefix(r"\\?\").unwrap_or(&print);
+        let substitute: Vec<u16> = format!(r"\??\{target}").encode_utf16().collect();
+        let print: Vec<u16> = target.encode_utf16().collect();
+        let size = 16 + (substitute.len() + print.len() + 2) * 2;
+        let mut buffer = vec![0u32; size.div_ceil(4)];
+        let raw = buffer.as_mut_ptr().cast::<u8>();
+        // SAFETY: aligned zeroed buffer with a mount-point header and two
+        // length-delimited UTF-16 names, each followed by a zero terminator.
+        unsafe {
+            raw.cast::<u32>().write(0xa0000003);
+            raw.add(4).cast::<u16>().write((size - 8) as u16);
+            raw.add(10)
+                .cast::<u16>()
+                .write((substitute.len() * 2) as u16);
+            raw.add(12)
+                .cast::<u16>()
+                .write((substitute.len() * 2 + 2) as u16);
+            raw.add(14).cast::<u16>().write((print.len() * 2) as u16);
+            std::ptr::copy_nonoverlapping(
+                substitute.as_ptr().cast::<u8>(),
+                raw.add(16),
+                substitute.len() * 2,
+            );
+            std::ptr::copy_nonoverlapping(
+                print.as_ptr().cast::<u8>(),
+                raw.add(18 + substitute.len() * 2),
+                print.len() * 2,
+            );
+        }
+        let writer = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .share_mode(3)
+            .custom_flags(0x02200000)
+            .open(dir.path())
+            .unwrap();
+        let mut returned = 0;
+        // SAFETY: live directory handle, valid bounded input and output count.
+        assert_eq!(
+            unsafe {
+                DeviceIoControl(
+                    writer.as_raw_handle(),
+                    0x900a4,
+                    raw.cast(),
+                    size as u32,
+                    std::ptr::null_mut(),
+                    0,
+                    &mut returned,
+                    std::ptr::null_mut(),
+                )
+            },
+            0
+        );
+        assert_eq!(std::io::Error::last_os_error().raw_os_error(), Some(145));
+        drop(writer);
+        let guard_path = publication._guard.path().to_owned();
+        drop(publication);
+        assert!(
+            !guard_path.exists(),
+            "only the owned publication guard is cleaned"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_received_temporary_can_be_sealed_and_read_back() {
+        let dir = tempfile::tempdir().unwrap();
+        let layout = Layout::open(&dir.path().join("exchange")).unwrap();
+        let temporary = layout.temporary().unwrap();
+        let mut writer =
+            tokio::fs::File::from_std(temporary.file.as_ref().unwrap().try_clone().unwrap());
+        tokio::io::AsyncWriteExt::write_all(&mut writer, b"abc")
+            .await
+            .unwrap();
+        tokio::io::AsyncWriteExt::flush(&mut writer).await.unwrap();
+        writer.sync_all().await.unwrap();
+        drop(writer);
+        let blob = temporary.publish(&layout.blobs, 3).unwrap();
+        let mut read = layout
+            .blob(
+                &blob,
+                3,
+                "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            )
+            .unwrap();
+        assert!(std::fs::write(layout.blobs.path.join(&blob), b"bad").is_err());
+        assert!(std::fs::rename(&layout.root.path, dir.path().join("moved")).is_err());
+        let mut bytes = Vec::new();
+        read.read_to_end(&mut bytes).unwrap();
+        assert_eq!(bytes, b"abc");
+    }
 }

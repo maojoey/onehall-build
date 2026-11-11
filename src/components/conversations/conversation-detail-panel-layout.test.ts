@@ -8,6 +8,14 @@ const source = readFileSync(
   ),
   "utf8"
 )
+const queueFlushSource = readFileSync(
+  resolve(process.cwd(), "src/hooks/use-queue-auto-flush.ts"),
+  "utf8"
+)
+const queuedSteerSource = readFileSync(
+  resolve(process.cwd(), "src/lib/queued-steer.ts"),
+  "utf8"
+)
 const welcomeHeroSource = readFileSync(
   resolve(process.cwd(), "src/components/chat/welcome-hero.tsx"),
   "utf8"
@@ -72,6 +80,11 @@ describe("ConversationDetailPanel new conversation layout", () => {
     // The welcome composer is taller (min-h-30) than the compact default kept by
     // active/historical conversations.
     expect(welcomeBranch).toContain("tall")
+    expect(welcomeBranch).toContain("queue={msgQueue}")
+    expect(welcomeBranch).toContain("onQueueRetry={messageQueue.retryUnknown}")
+    expect(welcomeBranch).toContain(
+      "editingDraftBlocks={editingQueueDraftBlocks}"
+    )
   })
 
   it("snaps the hidden keep-alive tab so `transition-all` descendants don't ghost", () => {
@@ -457,33 +470,23 @@ describe("ConversationDetailPanel send-path hardening", () => {
     // cwd; sending then would hit the wrong workspace. handleSend must gate on
     // the readiness predicate (connected AND cwd matches), like the flush effect.
     expect(source).toContain("isConnectionReady(")
-    expect(source).toContain("if (!connectionReady) return")
+    expect(source).toMatch(
+      /if \(!connectionReady\) \{\s*opts\?\.onNotSent\?\.\(\)\s*return/
+    )
   })
 
   it("gates the queue auto-flush on the SAME readiness predicate as the send", () => {
-    // The flush DEQUEUES before handing the message to handleSend, so a gate
-    // weaker than handleSend's own check takes the message off the queue and
-    // then loses it when the send bails. The two drifted once already: the agent
-    // term was added to `connectionReady` while the flush kept its own inlined
-    // connStatus+cwd pair, so a draft whose agent had just been switched — its
-    // old connection still live at the same cwd — silently ate the message.
-    // Both must read the one variable.
-    //
-    // Scoped to the flush effect's own body: `connStatus` is a legitimate gate
-    // elsewhere in the file (answering a question, forking), so banning it
-    // outright would be wrong.
-    const start = source.indexOf("// Flush queued messages whenever the agent")
-    const end = source.indexOf("autoSendQueueRef.current()", start)
+    // Behavior is covered by queue-delivery.integration; retain this wiring
+    // check so the panel cannot accidentally pass a weaker predicate.
+    const start = source.indexOf("useQueueAutoFlush({")
+    const end = source.indexOf("// Mirror the connection's liveMessage", start)
+    const flush = source.slice(start, end)
     expect(start).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
-    const flushEffect = source.slice(start, end)
-
-    expect(flushEffect).toContain("if (!connectionReady) return")
-    expect(flushEffect).toContain("if (!connectionReadyRef.current) return")
-    // No re-spelling of the predicate: the connection is judged ONLY through
-    // the shared variable.
-    expect(flushEffect).not.toContain("connStatus")
-    expect(flushEffect).not.toContain("connectedWorkingDir")
+    expect(flush).toContain("ready: connectionReady")
+    expect(flush).not.toContain("connStatus")
+    expect(flush).not.toContain("connectedWorkingDir")
+    expect(queueFlushSource).toContain("!latest.current.ready")
+    expect(queueFlushSource).toContain("origin.queue.beginSend(")
   })
 
   it("holds the queue auto-flush while a queued row is being inserted", () => {
@@ -493,18 +496,13 @@ describe("ConversationDetailPanel send-path hardening", () => {
     // just injected — the same instruction delivered twice. The hold is
     // released in a `finally`, and the flag is a dependency, so the flush
     // resumes on the next commit either way.
-    const start = source.indexOf("// Flush queued messages whenever the agent")
-    const depsEnd = source.indexOf("clearTimeout(timer)", start)
+    const start = source.indexOf("useQueueAutoFlush({")
     const effectWithDeps = source.slice(
       start,
-      source.indexOf("])", depsEnd) + 2
+      source.indexOf("// Mirror the connection's liveMessage", start)
     )
-    expect(effectWithDeps).toContain("if (queueSteerInFlight) return")
-    // …and as a dependency, so releasing the hold re-runs the flush.
-    const dependencies = effectWithDeps.slice(
-      effectWithDeps.lastIndexOf("}, [")
-    )
-    expect(dependencies).toMatch(/\bqueueSteerInFlight\b/)
+    expect(effectWithDeps).toContain("queueSteerInFlight")
+    expect(queueFlushSource).toContain("blocked")
 
     const steerStart = source.indexOf("const handleQueueSteer = useCallback")
     expect(steerStart).toBeGreaterThan(-1)
@@ -515,18 +513,18 @@ describe("ConversationDetailPanel send-path hardening", () => {
     // Set BEFORE the first await, cleared in a finally. Both must be found: a
     // missing setter's -1 would otherwise pass the ordering check.
     const holdAt = steerHandler.indexOf("setQueueSteerInFlight(true)")
-    const awaitAt = steerHandler.indexOf("await deliverQueuedSteer(")
+    const awaitAt = steerHandler.indexOf("await deliverQueuedRowSteer(")
     expect(holdAt).toBeGreaterThan(-1)
     expect(holdAt).toBeLessThan(awaitAt)
     expect(steerHandler).toContain("finally {")
     expect(steerHandler).toContain("setQueueSteerInFlight(false)")
     // A turn-end fallback must use the existing mode/readiness/busy handling,
     // without a second prompt or optimistic-message path in this callback.
-    expect(steerHandler).toContain("() => mqMoveToFront(id)")
-    expect(steerHandler).toContain("if (delivered) mqRemove(id)")
+    expect(queuedSteerSource).toContain("queue.moveToFront(id)")
+    expect(queuedSteerSource).toContain('if (delivered) settle("accepted")')
     // …and still tells the user the row became the next turn, not an insert.
     expect(steerHandler).toContain(
-      'else toast.info(tCmp("steerQueuedInstead"))'
+      'if (delivered === false) toast.info(tCmp("steerQueuedInstead"))'
     )
     expect(steerHandler).not.toContain("acpPrompt(")
     expect(steerHandler).not.toContain("appendOptimisticTurn(")
@@ -586,7 +584,7 @@ describe("ConversationDetailPanel session-load failure surface", () => {
       "hideInput={isWelcomeMode || Boolean(acpLoadError)}"
     )
     // …and the banner takes its place, explaining why and offering recovery.
-    expect(source).toContain("composerBanner={acpLoadErrorBanner}")
+    expect(source).toMatch(/composerBanner=\{[\s\S]*?\{acpLoadErrorBanner\}/)
     const bannerStart = source.indexOf("const acpLoadErrorBanner")
     expect(bannerStart).toBeGreaterThan(-1)
     const bannerEnd = source.indexOf("const goalControlValue", bannerStart)

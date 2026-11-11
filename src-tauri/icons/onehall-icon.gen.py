@@ -45,6 +45,32 @@ def body_square(im: Image.Image) -> Image.Image:
     return sq
 
 
+
+def macos_canvas(body: Image.Image) -> Image.Image:
+    """Fit alpha coverage to the existing 824px grid, preserving aspect ratio."""
+    side = body.width
+    body = body.copy()
+    # The raster tile contains alpha=253 in its solid fill. Keep the soft
+    # low-alpha edge, but make the tile opaque before measuring its coverage;
+    # otherwise fitting coverage pushes its opaque edge outside the grid.
+    alpha = body.getchannel("A").point(lambda value: 255 if value > 127 else value)
+    body.putalpha(alpha)
+    width = sum(alpha.crop((0, side // 2, side, side // 2 + 1)).getdata()) / 255
+    height = sum(alpha.crop((side // 2, 0, side // 2 + 1, side)).getdata()) / 255
+    coverage = (width + height) / 2
+    if coverage <= 0:
+        raise ValueError("Icon has no body through its center")
+    # body_square retains antialiasing and a small transparent margin. Scale
+    # the visible body, using the same measurement as macos_icon_geometry.rs.
+    rendered_side = round(824 * side / coverage)
+    if rendered_side > 1024:
+        raise ValueError("Icon body does not fit the macOS canvas")
+    inset = (1024 - rendered_side) // 2
+    canvas = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
+    canvas.paste(body.resize((rendered_side, rendered_side), Image.LANCZOS), (inset, inset))
+    return canvas
+
+
 def tauri_icon(png: Path, out: Path) -> None:
     subprocess.run(["pnpm", "tauri", "icon", str(png), "-o", str(out)], cwd=ROOT, check=True)
 
@@ -92,8 +118,7 @@ def main() -> None:
         tmp = Path(tmp_s)
         full = sq.resize((1024, 1024), Image.LANCZOS)
         full.save(tmp / "full.png")
-        mac = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
-        mac.paste(sq.resize((824, 824), Image.LANCZOS), (100, 100))
+        mac = macos_canvas(sq)
         mac.save(tmp / "mac.png")
 
         tauri_icon(tmp / "full.png", ICONS)

@@ -53,7 +53,13 @@ import {
   isHallSubmissionPending,
   submitHallConversation,
 } from "@/lib/hall/submissions"
-import { useMessageQueue, type QueuedMessage } from "@/hooks/use-message-queue"
+import { useMessageQueue } from "@/hooks/use-message-queue"
+import {
+  useQueueAutoFlush,
+  type QueuedSendCallbacks,
+} from "@/hooks/use-queue-auto-flush"
+import { getActiveBackendKey } from "@/lib/transport"
+import { resolveMessageQueueScope } from "@/lib/message-queue-store"
 import { MessageListView } from "@/components/message/message-list-view"
 import {
   GoalControlProvider,
@@ -100,13 +106,12 @@ import {
 } from "@/lib/api"
 import { isWindowedDetail } from "@/lib/turn-window"
 import {
-  flushRetryDelayMs,
   isConnectionReady,
   shouldQueueDirectSend,
   shouldRejectDuplicateCreate,
 } from "@/lib/queue-flush"
 import { TurnBusyError } from "@/lib/turn-busy"
-import { deliverQueuedSteer } from "@/lib/queued-steer"
+import { deliverQueuedRowSteer } from "@/lib/queued-steer"
 import { toErrorMessage } from "@/lib/app-error"
 import { blockingPrompts } from "@/lib/blocking-prompts"
 import { notify } from "@/lib/notify"
@@ -282,6 +287,7 @@ const ConversationTabView = memo(function ConversationTabView({
   const tWelcome = useTranslations("Folder.chat.welcomeInputPanel")
   const tRemoteWorkspace = useTranslations("RemoteWorkspace") // onehall
   const backendLabel = useBackendLabel() // onehall
+  const tQueue = useTranslations("Folder.chat.messageQueue")
   const tDiag = useTranslations("DiagnosticsSettings")
   const sharedT = useTranslations("Folder.chat.shared")
   const tMessageList = useTranslations("Folder.chat.messageList")
@@ -701,16 +707,28 @@ const ConversationTabView = memo(function ConversationTabView({
     ),
   })
   const { status: connStatus, sessionId: connSessionId } = conn
-  const messageQueue = useMessageQueue()
+  const queueBackendKey = getActiveBackendKey()
+  const [initialQueueScope] = useState(() =>
+    resolveMessageQueueScope(queueBackendKey, tabId, dbConversationId)
+  )
+  const queueScope = useMemo(
+    () =>
+      resolveMessageQueueScope(
+        queueBackendKey,
+        tabId,
+        dbConversationId,
+        initialQueueScope
+      ),
+    [queueBackendKey, tabId, dbConversationId, initialQueueScope]
+  )
+  const messageQueue = useMessageQueue(queueScope)
   const {
     queue: msgQueue,
     enqueue: mqEnqueue,
     requeueFront: mqRequeueFront,
     getQueueLength: mqGetQueueLength,
-    dequeue: mqDequeue,
     remove: mqRemove,
     reorder: mqReorder,
-    moveToFront: mqMoveToFront,
     updateItem: mqUpdateItem,
     editingItemId: mqEditingItemId,
     startEditing: mqStartEditing,
@@ -756,12 +774,6 @@ const ConversationTabView = memo(function ConversationTabView({
     conn.agentType,
     selectedAgent
   )
-  // Read by the queue auto-flush's deferred timer, which must not act on a
-  // readiness reading captured a tick ago.
-  const connectionReadyRef = useRef(connectionReady)
-  useEffect(() => {
-    connectionReadyRef.current = connectionReady
-  }, [connectionReady])
   // Present "connecting" to the composer while connected-but-not-ready, so it
   // disables its send affordance instead of inviting a submit handleSend rejects.
   // While the live connection still belongs to a different agent, present the
@@ -873,18 +885,11 @@ const ConversationTabView = memo(function ConversationTabView({
     }
   }, [completeTurn, connStatus, effectiveConversationId, syncTurnMetadata])
 
-  // Auto-send queued messages when agent finishes responding.
-  // Refs are synced via useEffect; the auto-send effect is declared
-  // AFTER completeTurn so React runs it second.
-  const autoSendQueueRef = useRef<() => QueuedMessage | undefined>(mqDequeue)
-  useEffect(() => {
-    autoSendQueueRef.current = mqDequeue
-  }, [mqDequeue])
   const handleSendRef = useRef<
     (
       draft: PromptDraft,
       modeId?: string | null,
-      opts?: { fromQueueFlush?: boolean }
+      opts?: Partial<QueuedSendCallbacks>
     ) => void
   >(() => {})
   // Timestamp of the last send that bounced with TurnBusyError. The flush below
@@ -902,66 +907,22 @@ const ConversationTabView = memo(function ConversationTabView({
   // always clears this in a `finally`, which re-runs the flush effect.
   const [queueSteerInFlight, setQueueSteerInFlight] = useState(false)
 
-  // Flush queued messages whenever the agent is idle. This is the queue's send
-  // engine, covering BOTH:
-  //   - the normal case: a message queued while the agent was prompting, sent
-  //     once the turn completes (prompting→connected drives syncState→idle); and
-  //   - a draft re-queued by a bounced concurrent send that landed AFTER the
-  //     prompting→connected transition already passed — which an edge-triggered
-  //     flush would strand until the next turn.
-  // Gated on syncState !== "awaiting_persist" so exactly one item flushes at a
-  // time: dequeuing + sending appends an optimistic turn → awaiting_persist,
-  // which blocks re-entry until that send settles (the turn completes, or it
-  // bounces and rolls back to idle to retry the next item). A bounce backoff
-  // rate-limits retries against a still-busy backend.
-  useEffect(() => {
-    // The SAME readiness predicate `handleSend` gates on — deliberately the one
-    // variable, not a re-spelling of it. This effect DEQUEUES before handing the
-    // message over, so any gate weaker than the send's own check takes a message
-    // off the queue and then watches `handleSend` silently drop it. Bare
-    // "connected" is two such weakenings: a just-bound chat conversation can
-    // read a stale "connected" for the PREVIOUS cwd, and a draft whose agent was
-    // switched keeps the OLD agent's connection live at the same cwd until the
-    // lifecycle reconnects — which, for a not-installed target, never happens.
-    if (!connectionReady) return
-    if (hallSubmission?.status === "pending") return
-    if (runtimeSyncState === "awaiting_persist") return
-    // A row being inserted into the (just-ended) turn is still queued; sending
-    // it now would deliver it twice. See `queueSteerInFlight`.
-    if (queueSteerInFlight) return
-    if (msgQueue.length === 0) return
-    // setTimeout (not microtask) so a COMPLETE_TURN commit settles first AND so
-    // a just-bounced retry waits out the backoff window before re-sending.
-    const wait = flushRetryDelayMs(Date.now(), lastFlushBounceAtRef.current)
-    const timer = setTimeout(() => {
-      if (!connectionReadyRef.current) return
-      const next = autoSendQueueRef.current()
-      if (next) {
-        // Mark this as the queue auto-flush: it sends the dequeued head now and,
-        // on a bounce, returns it to the FRONT (vs a direct send → tail).
-        //
-        // `adoptSendTimeMode` items were queued before this tab could know its
-        // modes (an "ask about this selection" prompt parked on a brand-new
-        // draft), so they take the mode in effect NOW. A plain `modeId === null`
-        // is left alone — that is the answer / plan-notes retry paths saying
-        // "don't touch the agent's mode", which is a different intent.
-        handleSendRef.current(
-          next.draft,
-          next.adoptSendTimeMode ? selectedModeIdRef.current : next.modeId,
-          { fromQueueFlush: true }
-        )
-      }
-    }, wait)
-    return () => clearTimeout(timer)
-    // `connectionReady` subsumes connStatus, the connection's cwd and its agent,
-    // so it is the only connection dependency this effect needs.
-  }, [
-    connectionReady,
-    runtimeSyncState,
-    msgQueue.length,
-    queueSteerInFlight,
-    hallSubmission?.status,
-  ])
+  useQueueAutoFlush({
+    queue: messageQueue,
+    ready: connectionReady,
+    sendTimeMode: selectedModeId,
+    blocked:
+      hallSubmission?.status === "pending" ||
+      runtimeSyncState === "awaiting_persist" ||
+      queueSteerInFlight,
+    bounceAt: lastFlushBounceAtRef,
+    send: (item, callbacks) =>
+      handleSendRef.current(
+        item.draft,
+        item.adoptSendTimeMode ? selectedModeIdRef.current : item.modeId,
+        callbacks
+      ),
+  })
 
   // Mirror the connection's liveMessage into the runtime session OUTSIDE React.
   // The connection dispatch invokes this sink synchronously whenever liveMessage
@@ -1145,12 +1106,15 @@ const ConversationTabView = memo(function ConversationTabView({
       removeOptimisticTurn(effectiveConversationId, input.clientMessageId)
       if (hallSubmission.error instanceof TurnBusyError) {
         lastFlushBounceAtRef.current = Date.now()
-        if (input.fromQueueFlush)
+        if (input.queueId) {
+          /* The originating durable queue owns settlement. */
+        } else if (input.fromQueueFlush)
           mqRequeueFront(input.draft, input.modeId ?? null)
         else mqEnqueue(input.draft, input.modeId ?? null)
       } else {
         setHasSentMessage(false)
-        saveMessageInputDraft(draftStorageKey, input.draft.displayText)
+        if (!input.queueId)
+          saveMessageInputDraft(draftStorageKey, input.draft.displayText)
         notify({
           level: "error",
           key: `hall-send-failed:${tabId}`,
@@ -1183,7 +1147,7 @@ const ConversationTabView = memo(function ConversationTabView({
       // input send (no flag) must NOT jump ahead of already-queued items: when
       // a queue exists it tail-enqueues instead of sending, and on a bounce it
       // re-queues at the TAIL.
-      opts?: { fromQueueFlush?: boolean }
+      opts?: Partial<QueuedSendCallbacks>
     ) => {
       // Capture the tab's chat-draft state + eager scratch dir synchronously,
       // before any await. A folderless chat draft is NOT special-cased here:
@@ -1192,18 +1156,30 @@ const ConversationTabView = memo(function ConversationTabView({
       // createChatConversation, reusing this eager dir). The composer is gated
       // on `connected` for chat drafts too, so by the time we get here the agent
       // is live and the prompt is delivered inline — never parked in the queue.
+      if (getActiveBackendKey() !== queueBackendKey) {
+        opts?.onNotSent?.()
+        return
+      }
       const sendOwnTab = ownTab
 
       if (!hasPersistedConversation && !canAutoConnect) {
         setAgentConnectError(tWelcome("enableAgentFirstPlaceholder"))
+        opts?.onNotSent?.()
         return
       }
       // Connected AND the connection's cwd matches this tab's working dir. Bare
       // `connStatus === "connected"` is not enough: a chat draft mid-reconnect can
       // read a stale "connected" for the old cwd, and an inline send then would
       // deliver to the wrong workspace. Same predicate the flush effect uses.
-      if (!connectionReady) return
+      if (!connectionReady) {
+        opts?.onNotSent?.()
+        return
+      }
       if (isHallSubmissionPending(tabId)) {
+        if (opts?.queueId) {
+          opts.onNotSent?.()
+          return
+        }
         if (dbConvIdRef.current != null) {
           if (opts?.fromQueueFlush)
             mqRequeueFront(draft, selectedModeIdArg ?? null)
@@ -1235,6 +1211,7 @@ const ConversationTabView = memo(function ConversationTabView({
           createConversationPendingRef.current
         )
       ) {
+        opts?.onNotSent?.()
         return
       }
 
@@ -1242,6 +1219,7 @@ const ConversationTabView = memo(function ConversationTabView({
         draft,
         sharedT("attachedResources")
       )
+      if (opts?.queueId) optimisticTurn.id = opts.queueId
       appendOptimisticTurn(
         effectiveConversationId,
         optimisticTurn,
@@ -1262,7 +1240,9 @@ const ConversationTabView = memo(function ConversationTabView({
         removeOptimisticTurn(effectiveConversationId, optimisticTurn.id)
         // FIFO: the auto-flush draft WAS the queue head → return it to the
         // front; a direct send (queue was empty when it left) → tail.
-        if (fromQueueFlush) {
+        if (opts?.queueId) {
+          opts.onNotSent?.()
+        } else if (fromQueueFlush) {
           mqRequeueFront(draft, selectedModeIdArg ?? null)
         } else {
           mqEnqueue(draft, selectedModeIdArg ?? null)
@@ -1278,6 +1258,7 @@ const ConversationTabView = memo(function ConversationTabView({
       // bounce): a deterministic failure would retry — and toast — forever.
       const onSendFailed = () => {
         removeOptimisticTurn(effectiveConversationId, optimisticTurn.id)
+        opts?.onUnknown?.()
       }
 
       // Pin the tab if it was a temporary preview (single-click opened)
@@ -1291,23 +1272,31 @@ const ConversationTabView = memo(function ConversationTabView({
       // can drop its continuation or redirect a write into the local workspace.
       if (
         conn.connectionId &&
-        submitHallConversation({
-          surfaceKey: tabId,
-          connectionId: conn.connectionId,
-          folderId,
-          conversationId: persistedId,
-          agentType: selectedAgent,
-          title: promptDraftTitleSeed(draft, sharedT("attachedResources")),
-          draft,
-          clientMessageId: optimisticTurn.id,
-          modeId: selectedModeIdArg,
-          currentModeId: conn.modes?.current_mode_id,
-          chat:
-            !persistedId && sendOwnTab?.isChat
-              ? { existingDir: sendOwnTab.workingDir }
-              : undefined,
-          fromQueueFlush,
-        })
+        submitHallConversation(
+          {
+            surfaceKey: tabId,
+            connectionId: conn.connectionId,
+            folderId,
+            conversationId: persistedId,
+            agentType: selectedAgent,
+            title: promptDraftTitleSeed(draft, sharedT("attachedResources")),
+            draft,
+            clientMessageId: optimisticTurn.id,
+            modeId: selectedModeIdArg,
+            currentModeId: conn.modes?.current_mode_id,
+            chat:
+              !persistedId && sendOwnTab?.isChat
+                ? { existingDir: sendOwnTab.workingDir }
+                : undefined,
+            fromQueueFlush,
+            queueId: opts?.queueId,
+          },
+          (outcome) => {
+            if (outcome === "accepted") opts?.onAccepted?.()
+            else if (outcome === "busy") opts?.onNotSent?.()
+            else opts?.onUnknown?.()
+          }
+        )
       ) {
         acpActions.touchActivity(tabId)
         return
@@ -1324,6 +1313,7 @@ const ConversationTabView = memo(function ConversationTabView({
           // turn by exact id (and never suppresses a different sender's prompt).
           clientMessageId: optimisticTurn.id,
           onTurnInProgress,
+          onSendAccepted: opts?.onAccepted,
           onSendFailed,
         })
         return
@@ -1367,6 +1357,7 @@ const ConversationTabView = memo(function ConversationTabView({
             if (!mountedRef.current) {
               setPendingCleanup(effectiveConversationId, true)
               refreshConversations()
+              opts?.onNotSent?.()
               return
             }
             // Seed allFolders with the hidden chat folder so the tab's new
@@ -1403,6 +1394,7 @@ const ConversationTabView = memo(function ConversationTabView({
               // so the background turn_complete handler can clean up later.
               setPendingCleanup(effectiveConversationId, true)
               refreshConversations()
+              opts?.onNotSent?.()
               return
             }
             setCreatedConversationId(newConversationId)
@@ -1425,9 +1417,11 @@ const ConversationTabView = memo(function ConversationTabView({
             conversationId: newConversationId,
             clientMessageId: optimisticTurn.id,
             onTurnInProgress,
+            onSendAccepted: opts?.onAccepted,
             onSendFailed,
           })
         } catch (e) {
+          opts?.onUnknown?.()
           console.error("[ConversationTabView] create conversation:", e)
           // A failed create (chat OR normal) must fully restore the pre-send
           // state, not strand the user behind a blank panel:
@@ -1457,6 +1451,7 @@ const ConversationTabView = memo(function ConversationTabView({
       })()
     },
     [
+      queueBackendKey,
       appendOptimisticTurn,
       removeOptimisticTurn,
       mqEnqueue,
@@ -2350,7 +2345,7 @@ const ConversationTabView = memo(function ConversationTabView({
   const handleQueueSteer = useCallback(
     async (id: string) => {
       const item = msgQueue.find((m) => m.id === id)
-      if (!item) return
+      if (!item || (item.status && item.status !== "queued")) return
       const payload = buildSteerPayload(item.draft)
       // Nothing sendable in this row (no text, and no display text standing in
       // for its attachments). Leave it alone: removing it would delete queued
@@ -2361,14 +2356,18 @@ const ConversationTabView = memo(function ConversationTabView({
       // when the turn-end edge lands mid-round-trip.
       setQueueSteerInFlight(true)
       try {
-        const delivered = await deliverQueuedSteer(
-          () => feedbackSteer(payload.text, payload.blocks),
-          () => mqMoveToFront(id)
+        const delivered = await deliverQueuedRowSteer(
+          messageQueue,
+          id,
+          async (draft) => {
+            const currentPayload = buildSteerPayload(draft)
+            if (!currentPayload)
+              throw new Error("Queued message has no sendable content")
+            await feedbackSteer(currentPayload.text, currentPayload.blocks)
+          },
+          () => mountedRef.current && getActiveBackendKey() === queueBackendKey
         )
-        // Not delivered means the turn ended first, so the row goes out as the
-        // next turn instead; say so, as the composer's steer does.
-        if (delivered) mqRemove(id)
-        else toast.info(tCmp("steerQueuedInstead"))
+        if (delivered === false) toast.info(tCmp("steerQueuedInstead"))
       } catch (err: unknown) {
         notify({
           level: "error",
@@ -2385,11 +2384,11 @@ const ConversationTabView = memo(function ConversationTabView({
     [
       msgQueue,
       feedbackSteer,
-      mqRemove,
+      messageQueue,
       feedback.channel,
       tabId,
       tCmp,
-      mqMoveToFront,
+      queueBackendKey,
     ]
   )
 
@@ -2457,7 +2456,16 @@ const ConversationTabView = memo(function ConversationTabView({
       hideInput={isWelcomeMode || Boolean(acpLoadError)}
       injectContent={composerInject}
       onInjectConsumed={handleComposerInjectConsumed}
-      composerBanner={acpLoadErrorBanner}
+      composerBanner={
+        messageQueue.persistenceError ? (
+          <>
+            {acpLoadErrorBanner}
+            <div role="alert">{tQueue("persistenceFailed")}</div>
+          </>
+        ) : (
+          acpLoadErrorBanner
+        )
+      }
       feedbackList={
         feedback.showList ? (
           <FeedbackNotesDisplay
@@ -2480,6 +2488,7 @@ const ConversationTabView = memo(function ConversationTabView({
       onQueueReorder={mqReorder}
       onQueueEdit={handleQueueEdit}
       onQueueDelete={mqRemove}
+      onQueueRetry={messageQueue.retryUnknown}
       onQueueSteer={
         // Same gate as the composer's mid-turn send, plus a turn actually in
         // flight: a queued row can only be inserted into a RUNNING turn —
@@ -2593,6 +2602,18 @@ const ConversationTabView = memo(function ConversationTabView({
                 availableCommands={connectionCommands}
                 attachmentTabId={tabId}
                 draftStorageKey={draftStorageKey}
+                queue={msgQueue}
+                onEnqueue={mqEnqueue}
+                onQueueReorder={mqReorder}
+                onQueueEdit={handleQueueEdit}
+                onQueueDelete={mqRemove}
+                onQueueRetry={messageQueue.retryUnknown}
+                editingItemId={mqEditingItemId}
+                editingDraftText={editingQueueDraftText}
+                editingDraftBlocks={editingQueueDraftBlocks}
+                isEditingQueueItem={mqEditingItemId != null}
+                onSaveQueueEdit={handleSaveQueueEdit}
+                onCancelQueueEdit={handleQueueCancelEdit}
                 isActive={isActive}
                 showActiveFlow={showActiveFlow}
                 onAddFeedback={

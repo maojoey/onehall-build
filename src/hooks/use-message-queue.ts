@@ -1,11 +1,18 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react"
 import type { PromptDraft } from "@/lib/types"
 import { randomUUID } from "@/lib/utils"
+import {
+  createMessageQueueStore,
+  getMessageQueueStore,
+  type QueueOutcome,
+} from "@/lib/message-queue-store"
 
 export interface QueuedMessage {
   id: string
+  status?: "queued" | "sending" | "unknown"
+  deliveryToken?: string
   draft: PromptDraft
   /**
    * The mode this message will be sent under. `null` means "leave the agent's
@@ -31,6 +38,13 @@ export interface QueuedMessage {
 
 export interface UseMessageQueueReturn {
   queue: QueuedMessage[]
+  retryUnknown: (id: string) => void
+  persistenceError: boolean
+  beginSend: (
+    id?: string,
+    sendTimeMode?: string | null
+  ) => Promise<QueuedMessage | undefined>
+  settle: (id: string, outcome: QueueOutcome, token?: string) => void
   enqueue: (
     draft: PromptDraft,
     modeId: string | null,
@@ -61,25 +75,31 @@ export interface UseMessageQueueReturn {
   cancelEditing: () => void
 }
 
-export function useMessageQueue(): UseMessageQueueReturn {
-  const [queue, setQueue] = useState<QueuedMessage[]>([])
+export function useMessageQueue(scope?: string): UseMessageQueueReturn {
+  const store = useMemo(
+    () => (scope ? getMessageQueueStore(scope) : createMessageQueueStore()),
+    [scope]
+  )
+  const queue = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getSnapshot
+  )
+  const persistenceError = useSyncExternalStore(
+    store.subscribe,
+    store.getError,
+    store.getError
+  )
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
-  // Authoritative copy of the queue, updated SYNCHRONOUSLY by every mutation
-  // (before the React state commit). Reads that must observe the same-tick
-  // result of a mutation — the direct-send queue routing — go through this
-  // ref / `getQueueLength`, NOT the `queue` state (which lags until React
-  // commits) and NOT a passive-effect-synced mirror (which lags a full
-  // render). Without this, a bounce that re-queues a draft leaves a window
-  // where a caller still sees an empty queue.
-  const queueRef = useRef<QueuedMessage[]>(queue)
-
-  // Update the authoritative ref first, then schedule the render. A plain value
-  // (not a functional updater) is correct because `queueRef.current` is always
-  // the latest committed value.
-  const commit = useCallback((next: QueuedMessage[]) => {
-    queueRef.current = next
-    setQueue(next)
-  }, [])
+  const queueRef = useMemo(
+    () => ({
+      get current() {
+        return store.read()
+      },
+    }),
+    [store]
+  )
+  const commit = store.commit
 
   const enqueue = useCallback(
     (
@@ -97,14 +117,14 @@ export function useMessageQueue(): UseMessageQueueReturn {
         },
       ])
     },
-    [commit]
+    [commit, queueRef]
   )
 
   const requeueFront = useCallback(
     (draft: PromptDraft, modeId: string | null) => {
       commit([{ id: randomUUID(), draft, modeId }, ...queueRef.current])
     },
-    [commit]
+    [commit, queueRef]
   )
 
   const dequeue = useCallback((): QueuedMessage | undefined => {
@@ -112,7 +132,7 @@ export function useMessageQueue(): UseMessageQueueReturn {
     if (current.length === 0) return undefined
     commit(current.slice(1))
     return current[0]
-  }, [commit])
+  }, [commit, queueRef])
 
   const remove = useCallback(
     (id: string) => {
@@ -121,7 +141,7 @@ export function useMessageQueue(): UseMessageQueueReturn {
       }
       commit(queueRef.current.filter((item) => item.id !== id))
     },
-    [commit, editingItemId]
+    [commit, editingItemId, queueRef]
   )
 
   const reorder = useCallback(
@@ -135,6 +155,8 @@ export function useMessageQueue(): UseMessageQueueReturn {
       // otherwise drop `B` and duplicate `A`); commit the current item objects
       // in the requested order so a concurrent `updateItem` isn't clobbered.
       const current = queueRef.current
+      if (current.some((item) => item.status && item.status !== "queued"))
+        return
       if (items.length !== current.length) return
       const byId = new Map(current.map((item) => [item.id, item]))
       const seen = new Set<string>()
@@ -147,19 +169,21 @@ export function useMessageQueue(): UseMessageQueueReturn {
       }
       commit(next)
     },
-    [commit]
+    [commit, queueRef]
   )
 
   const updateItem = useCallback(
     (id: string, draft: PromptDraft) => {
       commit(
         queueRef.current.map((item) =>
-          item.id === id ? { ...item, draft } : item
+          item.id === id && (!item.status || item.status === "queued")
+            ? { ...item, draft }
+            : item
         )
       )
       setEditingItemId(null)
     },
-    [commit]
+    [commit, queueRef]
   )
 
   const moveToFront = useCallback(
@@ -169,10 +193,10 @@ export function useMessageQueue(): UseMessageQueueReturn {
       if (index <= 0) return
       commit([current[index], ...current.filter((item) => item.id !== id)])
     },
-    [commit]
+    [commit, queueRef]
   )
 
-  const getQueueLength = useCallback(() => queueRef.current.length, [])
+  const getQueueLength = useCallback(() => queueRef.current.length, [queueRef])
 
   const startEditing = useCallback((id: string) => {
     setEditingItemId(id)
@@ -184,6 +208,10 @@ export function useMessageQueue(): UseMessageQueueReturn {
 
   return {
     queue,
+    persistenceError,
+    retryUnknown: store.retryUnknown,
+    beginSend: store.beginSend,
+    settle: store.settle,
     enqueue,
     requeueFront,
     dequeue,

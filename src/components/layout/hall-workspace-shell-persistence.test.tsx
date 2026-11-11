@@ -63,6 +63,10 @@ vi.mock("@tauri-apps/api/event", () => ({
     }
   },
 }))
+vi.mock("@tauri-apps/api/webview", async () => {
+  const { listen } = await import("@tauri-apps/api/event")
+  return { getCurrentWebview: () => ({ label: "test-shell", listen }) }
+})
 vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => ({ setTitle: async () => {} }),
 }))

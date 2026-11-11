@@ -18,7 +18,12 @@ use crate::models::agent::AgentType;
 /// snapshot to a separate, empty connection.
 pub async fn fresh_disk_db(dir: &Path) -> AppDatabase {
     let path = dir.join("source.db");
-    let url = format!("sqlite:{}?mode=rwc", path.to_string_lossy());
+    // Match production: canonical Windows paths contain `?` (\\?\), and
+    // arbitrary directory names may contain URL delimiters on Unix too.
+    let url = format!(
+        "sqlite:{}?mode=rwc",
+        urlencoding::encode(&path.to_string_lossy())
+    );
     let conn = Database::connect(url).await.expect("open disk db");
     conn.execute(Statement::from_string(
         DbBackend::Sqlite,

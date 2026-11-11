@@ -21,6 +21,7 @@ export interface HallSubmissionInput {
   modeId?: string | null
   currentModeId?: string | null
   chat?: { existingDir?: string }
+  queueId?: string
   fromQueueFlush?: boolean
 }
 
@@ -74,7 +75,10 @@ export function consumeHallSubmission(job: HallSubmission) {
 
 /** Starts synchronously in the send gesture, before the shell can unmount.
  * No write is retried. A lost response remains a failed/uncertain submission. */
-export function submitHallConversation(input: HallSubmissionInput): boolean {
+export function submitHallConversation(
+  input: HallSubmissionInput,
+  onOutcome?: (outcome: "accepted" | "busy" | "unknown") => void
+): boolean {
   if (!useHallWorkspaceStore.getState().enabled) return false
   const backend = captureSubmissionBackend()
   const key = jobKey(backend.key, input.surfaceKey)
@@ -129,12 +133,14 @@ export function submitHallConversation(input: HallSubmissionInput): boolean {
         conversationId,
         clientMessageId: input.clientMessageId,
       })
+      onOutcome?.("accepted")
       jobs.set(key, {
         ...job,
         status: "accepted",
         result: { conversationId, folderId, chat },
       })
     } catch (error) {
+      onOutcome?.(isTurnInProgressRejection(error) ? "busy" : "unknown")
       jobs.set(key, {
         ...job,
         status: "failed",

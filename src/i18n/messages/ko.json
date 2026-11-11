@@ -3495,7 +3495,13 @@
         "editItem": "편집",
         "deleteItem": "삭제",
         "steerItemNow": "현재 턴에 삽입",
-        "steerItemAsNote": "메모로 보내 다음 점검 때 읽도록 함"
+        "steerItemAsNote": "메모로 보내 다음 점검 때 읽도록 함",
+        "sending": "전송 중, 수신 확인 대기",
+        "unknown": "결과를 알 수 없습니다. 대화를 확인하세요. 이 메시지는 자동으로 재전송되지 않습니다.",
+        "persistenceFailed": "대기열 복구 저장소를 사용할 수 없습니다. 창을 닫기 전에 미전송 내용을 복사하세요.",
+        "copyItem": "메시지 복사",
+        "retryVerified": "확인 후 재시도",
+        "retryConfirm": "원래 대화와 요청을 먼저 확인하세요. 중복 실행을 피하려면 수신되지 않았음을 확인한 경우에만 계속하세요."
       },
       "welcomeInputPanel": {
         "agentsSettingsPath": "설정 > 에이전트",

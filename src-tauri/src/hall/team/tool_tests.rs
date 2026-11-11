@@ -211,6 +211,11 @@ async fn stale_released_or_unattached_runs_and_missing_exchange_are_denied() {
         .is_err());
     assert!(a
         .service
+        .call(&other, ToolRequest::ListOutputs {})
+        .await
+        .is_err());
+    assert!(a
+        .service
         .call(&other, read(&object, 0, None))
         .await
         .is_err());
@@ -230,11 +235,20 @@ async fn stale_released_or_unattached_runs_and_missing_exchange_are_denied() {
         .call(&a.actor, ToolRequest::ListInputs {})
         .await
         .is_err());
+    assert!(closed
+        .call(&a.actor, ToolRequest::ListOutputs {})
+        .await
+        .is_err());
     // A revoked registry entry (released run) loses every content tool.
     a.registry.revoke(a.binding.run_id());
     assert!(a
         .service
         .call(&a.actor, ToolRequest::ListInputs {})
+        .await
+        .is_err());
+    assert!(a
+        .service
+        .call(&a.actor, ToolRequest::ListOutputs {})
         .await
         .is_err());
     assert!(a
@@ -299,6 +313,11 @@ async fn a_retried_task_gives_content_tools_only_to_the_new_attempt() {
         .is_err());
     assert!(a
         .service
+        .call(&a.actor, ToolRequest::ListOutputs {})
+        .await
+        .is_err());
+    assert!(a
+        .service
         .call(&a.actor, read(&object, 0, None))
         .await
         .is_err());
@@ -354,6 +373,11 @@ async fn a_live_actor_whose_run_is_not_the_attempts_recorded_run_is_refused() {
     assert!(a
         .service
         .call(&a.actor, ToolRequest::ListInputs {})
+        .await
+        .is_err());
+    assert!(a
+        .service
+        .call(&a.actor, ToolRequest::ListOutputs {})
         .await
         .is_err());
     assert!(a
@@ -438,6 +462,7 @@ async fn members_and_the_pm_cannot_use_another_tasks_objects_or_slots() {
 fn tool_arguments_never_carry_identity_paths_or_addresses() {
     for (tool, args) in [
         ("hall_list_inputs", json!({})),
+        ("hall_list_outputs", json!({})),
         (
             "hall_read_input",
             json!({"objectId": uid(), "offset": 0, "maxBytes": 100}),
@@ -459,6 +484,7 @@ fn tool_arguments_never_carry_identity_paths_or_addresses() {
     ] {
         for (tool, base) in [
             ("hall_list_inputs", json!({})),
+            ("hall_list_outputs", json!({})),
             ("hall_read_input", json!({"objectId": uid()})),
             ("hall_submit_output", json!({"slotId": uid()})),
         ] {
@@ -477,7 +503,12 @@ fn tool_arguments_never_carry_identity_paths_or_addresses() {
 
 #[test]
 fn only_these_tools_are_member_tools_and_only_they_are_auto_allowed() {
-    let names = ["hall_list_inputs", "hall_read_input", "hall_submit_output"];
+    let names = [
+        "hall_list_inputs",
+        "hall_list_outputs",
+        "hall_read_input",
+        "hall_submit_output",
+    ];
     for name in names {
         assert!(mcp::member_tool(name) && !mcp::pm_tool(name));
         // Codex card shape: server + tool + arguments.
@@ -521,4 +552,82 @@ fn only_these_tools_are_member_tools_and_only_they_are_auto_allowed() {
             .all(|k| ["objectId", "offset", "maxBytes", "slotId"].contains(&k.as_str())));
     }
     let _: Value = json!(null);
+}
+
+#[tokio::test]
+async fn the_model_can_learn_its_output_slots_and_seal_what_it_wrote_there() {
+    let a = attached().await;
+    let (owner, _) = current_owner(&a.f.db, &a.task).await.unwrap().unwrap();
+    // The host prepares the attempt directories before any model starts.
+    a.exchange.materialize(&owner).await.unwrap();
+    let listed = a
+        .service
+        .call(&a.actor, ToolRequest::ListOutputs {})
+        .await
+        .unwrap();
+    let rows = listed.as_array().unwrap();
+    assert_eq!(rows.len(), a.manifest.outputs.len());
+    let slot = a.manifest.outputs[0].slot_id.clone();
+    let row = rows.iter().find(|r| r["slotId"] == json!(slot)).unwrap();
+    assert_eq!(
+        row["displayName"],
+        json!(a.manifest.outputs[0].display_name)
+    );
+    let path = std::path::PathBuf::from(row["path"].as_str().unwrap());
+    assert!(path.is_absolute() && path.parent().unwrap().is_dir());
+    assert_eq!(
+        path.file_name().unwrap().to_str().unwrap(),
+        a.manifest.outputs[0].display_name
+    );
+    // Writing exactly where the host said, then asking for the slot, seals it.
+    std::fs::write(&path, OUTPUT).unwrap();
+    let sealed = a
+        .service
+        .call(
+            &a.actor,
+            ToolRequest::SubmitOutput {
+                slot_id: slot.clone(),
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(sealed["size"], json!(OUTPUT.len()));
+    // Only the tool's own fields are accepted: identity or paths never come from the model.
+    assert!(mcp::input("hall_list_outputs", json!({"path": "/etc"})).is_err());
+    assert!(mcp::input("hall_list_outputs", json!({})).is_ok());
+    assert!(mcp::member_tool("hall_list_outputs") && !mcp::pm_tool("hall_list_outputs"));
+}
+
+#[tokio::test]
+async fn revoked_exchange_attempt_no_longer_discloses_writable_output_targets() {
+    let a = attached().await;
+    let (owner, _) = current_owner(&a.f.db, &a.task).await.unwrap().unwrap();
+    a.exchange.materialize(&owner).await.unwrap();
+    assert!(a
+        .service
+        .call(&a.actor, ToolRequest::ListOutputs {})
+        .await
+        .is_ok());
+    a.exchange.revoke_attempt(&owner).await.unwrap();
+    assert!(a
+        .service
+        .call(&a.actor, ToolRequest::ListOutputs {})
+        .await
+        .is_err());
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn moved_output_ancestors_do_not_yield_a_stale_host_path() {
+    let a = attached().await;
+    let (owner, _) = current_owner(&a.f.db, &a.task).await.unwrap().unwrap();
+    let paths = a.exchange.materialize(&owner).await.unwrap();
+    let output = paths.outputs.values().next().unwrap();
+    let root = output.ancestors().nth(5).unwrap();
+    std::fs::rename(root, root.with_extension("moved")).unwrap();
+    assert!(a
+        .service
+        .call(&a.actor, ToolRequest::ListOutputs {})
+        .await
+        .is_err());
 }

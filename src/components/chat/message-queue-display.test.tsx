@@ -170,3 +170,36 @@ describe("MessageQueueDisplay click-to-insert", () => {
     expect(screen.getAllByTitle(TQ.steerItemNow)).toHaveLength(1)
   })
 })
+
+describe("queue delivery recovery", () => {
+  it("shows uncertainty, disables edit/steer, and only retries after explicit reconciliation", async () => {
+    const retry = vi.fn(),
+      steer = vi.fn()
+    renderDisplay({
+      queue: [{ ...itemWithAttachment("q1", "retained"), status: "unknown" }],
+      onRetry: retry,
+      onSteerItem: steer,
+    })
+    expect(screen.getByRole("status")).toHaveTextContent(TQ.unknown)
+    expect(screen.getByTitle(TQ.editItem)).toBeDisabled()
+    expect(screen.queryByTitle(TQ.steerItemNow)).toBeNull()
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false)
+    try {
+      await userEvent.click(screen.getByText(TQ.retryVerified))
+      expect(retry).not.toHaveBeenCalled()
+      confirm.mockReturnValue(true)
+      await userEvent.click(screen.getByText(TQ.retryVerified))
+      expect(confirm).toHaveBeenCalledWith(TQ.retryConfirm)
+      expect(retry).toHaveBeenCalledOnce()
+      expect(retry).toHaveBeenCalledWith("q1")
+      expect(steer).not.toHaveBeenCalled()
+    } finally {
+      confirm.mockRestore()
+    }
+  })
+  it("keeps a sending row visible until settlement and disables removal", () => {
+    renderDisplay({ queue: [{ ...item("q1", "pending"), status: "sending" }] })
+    expect(screen.getByRole("status")).toHaveTextContent(TQ.sending)
+    expect(screen.getByTitle(TQ.deleteItem)).toBeDisabled()
+  })
+})

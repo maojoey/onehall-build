@@ -9,6 +9,7 @@ pub fn member_tool(name: &str) -> bool {
             | "hall_ack_message"
             | "hall_report"
             | "hall_list_inputs"
+            | "hall_list_outputs"
             | "hall_read_input"
             | "hall_submit_output"
     )
@@ -71,7 +72,7 @@ mod tests {
     #[test]
     fn schemas_match_group_names_and_reject_identity_injection() {
         let rows = schemas();
-        assert_eq!(rows.len(), 14);
+        assert_eq!(rows.len(), 15);
         for row in rows {
             let name = row["name"].as_str().unwrap();
             assert!(member_tool(name) ^ pm_tool(name));

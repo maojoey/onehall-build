@@ -4,6 +4,10 @@ import type {
   RemoteWorkspaceConnectionInput,
 } from "@/lib/types"
 
+export async function getLocalMachineName(): Promise<string> {
+  return getShellTransport().call("get_local_machine_name")
+}
+
 export async function listRemoteWorkspaceConnections(): Promise<
   RemoteWorkspaceConnection[]
 > {

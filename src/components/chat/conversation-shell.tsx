@@ -128,6 +128,7 @@ interface ConversationShellProps {
   onEnqueue?: (draft: PromptDraft, modeId: string | null) => void
   onQueueReorder?: (items: QueuedMessage[]) => void
   onQueueEdit?: (id: string) => void
+  onQueueRetry?: (id: string) => void
   onQueueDelete?: (id: string) => void
   /** Insert one queued item into the RUNNING turn over the session's
    *  live-feedback channel; threaded straight through to the composer's
@@ -219,6 +220,7 @@ export function ConversationShell({
   onQueueReorder,
   onQueueEdit,
   onQueueDelete,
+  onQueueRetry,
   onQueueSteer,
   editingItemId,
   editingDraftText,
@@ -347,6 +349,7 @@ export function ConversationShell({
               onQueueReorder={onQueueReorder}
               onQueueEdit={onQueueEdit}
               onQueueDelete={onQueueDelete}
+              onQueueRetry={onQueueRetry}
               onQueueSteer={onQueueSteer}
               editingItemId={editingItemId}
               editingDraftText={editingDraftText}

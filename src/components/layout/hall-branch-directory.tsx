@@ -154,7 +154,7 @@ export function HallBranchDirectory({
     <>
       <button
         type="button"
-        className="my-1 flex items-center gap-1 rounded-md px-2 text-muted-foreground hover:bg-background/60 hover:text-foreground"
+        className="my-1 ml-auto flex items-center gap-1 rounded-md bg-primary px-2.5 font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
         onClick={() => setOpen(true)}
       >
         <MonitorCloud className="h-3.5 w-3.5" aria-hidden />

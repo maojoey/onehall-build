@@ -14,9 +14,10 @@
 //! `<db>.tasks.lock`), and must stay apart: the first runtime to take one of
 //! those is that engine's for good, so any try-and-release there could cost
 //! a runtime starting at the same moment its engine. The OS lets go of a
-//! lock when its holder dies, however it dies, so a crash never leaves a
-//! data directory refused. A runtime from before this lock existed holds
-//! nothing, and is not seen.
+//! lock after its last inherited descriptor closes. Normal guard drop also
+//! unlocks explicitly, so a concurrent fork cannot extend a runtime's lock
+//! through its fork-to-exec window. A runtime from before this lock existed
+//! holds nothing, and is not seen.
 
 use std::fs::{File, OpenOptions, TryLockError};
 use std::io;
@@ -44,6 +45,16 @@ const RETRY: Duration = Duration::from_millis(250);
 #[derive(Debug)]
 pub struct RuntimeLock {
     _file: File,
+}
+
+#[cfg(unix)]
+impl Drop for RuntimeLock {
+    fn drop(&mut self) {
+        // A concurrent fork inherits the open file description even with
+        // CLOEXEC. Close alone leaves the lock held until that child execs.
+        // This guard owns this runtime's lock; unrelated children do not.
+        let _ = self._file.unlock();
+    }
 }
 
 /// Whether `error` says the filesystem cannot lock files at all (an NFS mount
@@ -167,6 +178,46 @@ mod tests {
         );
         drop(alone);
         assert!(try_shared(dir.path()).unwrap().is_some());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn dropping_a_runtime_releases_its_lock_while_an_unrelated_fork_is_alive() {
+        let dir = tempfile::tempdir().unwrap();
+        let first = try_shared(dir.path()).unwrap().unwrap();
+        let second = try_shared(dir.path()).unwrap().unwrap();
+        // SAFETY: the child calls only async-signal-safe pause; it never
+        // allocates, takes Rust locks, or runs inherited destructors. The
+        // parent kills and reaps exactly this owned child before asserting.
+        let pid = unsafe { libc::fork() };
+        assert!(pid >= 0, "fork the unrelated process");
+        if pid == 0 {
+            loop {
+                unsafe { libc::pause() };
+            }
+        }
+        drop(first);
+        let while_second_alive = try_exclusive(dir.path());
+        drop(second);
+        let after_runtime_drop = try_exclusive(dir.path());
+        // Capture outcomes first so no assertion can strand the paused child.
+        let killed = unsafe { libc::kill(pid, libc::SIGKILL) };
+        let reaped = loop {
+            let result = unsafe { libc::waitpid(pid, std::ptr::null_mut(), 0) };
+            if result >= 0 || std::io::Error::last_os_error().raw_os_error() != Some(libc::EINTR) {
+                break result;
+            }
+        };
+        assert_eq!(killed, 0);
+        assert_eq!(reaped, pid);
+        assert!(
+            while_second_alive.unwrap().is_none(),
+            "another runtime still owns its lock"
+        );
+        assert!(
+            after_runtime_drop.unwrap().is_some(),
+            "an unrelated fork must not extend the runtime's lock"
+        );
     }
 
     #[test]

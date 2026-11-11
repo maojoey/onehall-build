@@ -246,10 +246,10 @@
   },
   "SystemSettings": {
     "updateCredentialTitle": "Device update credential",
-    "updateCredentialDescription": "Import the private credential file issued for this device. The credential is stored in the OS keyring, separately from hall and GitHub credentials. This does not enable automatic updates.",
+    "updateCredentialDescription": "Updates work without a credential. Import a private credential file issued for this device only if the update service requires one. It is stored in the OS keychain, separate from Hall and GitHub credentials. Importing does not turn on automatic updates.",
     "updateCredentialLoading": "Reading credential status…",
     "updateCredentialPresent": "Device credential stored in OS keyring",
-    "updateCredentialAbsent": "No device credential imported",
+    "updateCredentialAbsent": "No device credential imported (optional)",
     "updateCredentialPath": "Credential file path",
     "updateCredentialImport": "Import credential file",
     "updateCredentialRemove": "Remove device credential",
@@ -3495,7 +3495,13 @@
         "editItem": "Edit",
         "deleteItem": "Remove",
         "steerItemNow": "Insert into current turn",
-        "steerItemAsNote": "Send as note for next check"
+        "steerItemAsNote": "Send as note for next check",
+        "sending": "Sending; awaiting acceptance",
+        "unknown": "Result unknown. Check the conversation; this message will not resend automatically.",
+        "persistenceFailed": "Queue recovery is unavailable. Keep this window open and copy unsent messages before closing.",
+        "copyItem": "Copy message",
+        "retryVerified": "Retry after checking",
+        "retryConfirm": "Check the original conversation and request first. Continue only if you have confirmed it was not received, to avoid duplicate execution."
       },
       "welcomeInputPanel": {
         "agentsSettingsPath": "Settings > Agents",

@@ -1,6 +1,6 @@
 [package]
 name = "codeg"
-version = "0.39.4"
+version = "0.39.6"
 description = "Agent Code Generation App"
 authors = ["feitao"]
 edition = "2021"
@@ -280,6 +280,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt",
 tracing-appender = "0.2"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+gethostname = "1"
 tauri-plugin-window-state = { version = "2", optional = true }
 # `requireSignedVersion` (tauri.conf.json) needs 2.12 or later; 2.14 is the
 # minor `@tauri-apps/plugin-updater` is on, and `tauri build` refuses a JS
@@ -354,6 +355,13 @@ javascriptcore-rs = { version = "=1.1.2", optional = true }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+[profile.dev]
+debug = "line-tables-only"
+incremental = false
+
+[profile.dev.package."*"]
+debug = false
 
 [dev-dependencies]
 tempfile = "3"

@@ -85,6 +85,7 @@ export interface UseConnectionLifecycleReturn {
        * as though it were sent. The draft is deliberately NOT re-queued: a
        * deterministic failure would otherwise retry forever.
        */
+      onSendAccepted?: () => void
       onSendFailed?: (error: unknown) => void
     }
   ) => void
@@ -492,6 +493,7 @@ export function useConnectionLifecycle({
         conversationId?: number | null
         clientMessageId?: string | null
         onTurnInProgress?: () => void
+        onSendAccepted?: () => void
         onSendFailed?: (error: unknown) => void
       }
     ) => {
@@ -507,6 +509,7 @@ export function useConnectionLifecycle({
           modeIdRef.current = modeId
         }
         await sendPrompt(draft.blocks, opts)
+        opts?.onSendAccepted?.()
       })().catch((e: unknown) => {
         if (e instanceof TurnBusyError) {
           // A turn was already in flight on the connection (another

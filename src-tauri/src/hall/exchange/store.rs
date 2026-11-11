@@ -263,27 +263,35 @@ impl Exchange {
                 .ok_or(ExchangeError::Storage)?
                 .try_clone()?,
         );
-        let mut count = 0u64;
-        let mut digest = Sha256::new();
-        let mut buffer = [0u8; 64 * 1024];
-        loop {
-            let n = reader.read(&mut buffer).await?;
-            if n == 0 {
-                break;
+        let received = async {
+            let mut count = 0u64;
+            let mut digest = Sha256::new();
+            let mut buffer = [0u8; 64 * 1024];
+            loop {
+                let n = reader.read(&mut buffer).await?;
+                if n == 0 {
+                    break;
+                }
+                count = count.checked_add(n as u64).ok_or(ExchangeError::Quota)?;
+                if count > size {
+                    return Err(ExchangeError::Conflict);
+                }
+                digest.update(&buffer[..n]);
+                file.write_all(&buffer[..n]).await?;
             }
-            count = count.checked_add(n as u64).ok_or(ExchangeError::Quota)?;
-            if count > size {
+            if count != size || format!("{:x}", digest.finalize()) != hash {
                 return Err(ExchangeError::Conflict);
             }
-            digest.update(&buffer[..n]);
-            file.write_all(&buffer[..n]).await?;
+            file.flush().await?;
+            file.sync_all().await?;
+            Ok::<(), ExchangeError>(())
         }
-        if count != size || format!("{:x}", digest.finalize()) != hash {
-            return Err(ExchangeError::Conflict);
-        }
-        file.flush().await?;
-        file.sync_all().await?;
-        drop(file);
+        .await;
+        // Join the blocking IO task on success AND rejection before a replay
+        // or bad body drops its no-delete temporary. Dropping Tokio's File
+        // alone can leave its cloned std handle alive and prevent cleanup.
+        drop(file.into_std().await);
+        received?;
         Ok(temporary)
     }
     async fn publish_temporary(&self, temporary: Temporary, size: u64) -> Result<String> {
@@ -473,6 +481,19 @@ impl Exchange {
             .1
             .inputs)
     }
+    pub async fn list_outputs(&self, actor: &AttemptOwner) -> Result<Vec<OutputTarget>> {
+        // These paths describe writable slots, not historical read access.
+        let (attached, run) = attempt(&self.db, actor, true).await?;
+        if run.state != "ready" {
+            return Err(ExchangeError::Forbidden);
+        }
+        let manifest = load_manifest(&self.db, &attached.manifest_id).await?.1;
+        let files = self.files.clone();
+        let nonce = run.nonce;
+        tokio::task::spawn_blocking(move || files.output_targets(&nonce, &manifest.outputs))
+            .await
+            .map_err(|_| ExchangeError::Storage)?
+    }
     pub async fn open_input(&self, actor: &AttemptOwner, object: &str) -> Result<File> {
         uuid(object)?;
         let (attached, run) = attempt(&self.db, actor, false).await?;
@@ -500,6 +521,15 @@ impl Exchange {
 pub struct MaterializedAttempt {
     pub inputs: BTreeMap<String, PathBuf>,
     pub outputs: BTreeMap<String, PathBuf>,
+}
+/// Where the host expects the file for one granted output slot. The path is
+/// host output for the model to write to; it is never accepted back as authority.
+#[derive(Clone, Debug, serde::Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct OutputTarget {
+    pub slot_id: String,
+    pub display_name: String,
+    pub path: PathBuf,
 }
 pub struct SealPreparation {
     actor: AttemptOwner,

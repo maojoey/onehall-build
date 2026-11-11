@@ -1,4 +1,4 @@
-//! Team-only compatibility bridge for codex-acp 2.2.2 / Codex CLI 0.163.0.
+//! Team-only compatibility bridge for codex-acp / Codex CLI 0.163.0 and newer.
 //! The adapter supplies a broad sandbox preset on every turn. Keep the host's
 //! frozen native permissions instead, including on auxiliary title threads.
 //! No request contents, credentials, or frozen configuration are logged.
@@ -20,7 +20,11 @@ use tokio::process::Command;
 const ENABLED: &str = "ONEHALL_CODEX_BRIDGE";
 const PROGRAM: &str = "ONEHALL_CODEX_BRIDGE_PROGRAM";
 const CONFIG: &str = "ONEHALL_CODEX_BRIDGE_CONFIG";
+/// The release the frozen-permission behaviour was verified against. It is what
+/// the execution policy records; launching accepts any newer 0.x release too
+/// (see [`version_supported`]), because the CLI updates faster than we re-verify.
 pub(crate) const SUPPORTED_VERSION: &str = "codex-cli 0.163.0";
+const MIN_CODEX_MINOR: u64 = 163;
 #[cfg(any(feature = "cli-bin", test))]
 const MAX_LINE: usize = 4 * 1024 * 1024;
 const MAX_CONFIG: usize = 512 * 1024;
@@ -54,7 +58,7 @@ pub(crate) async fn prepare(
         .or_else(|| std::env::var_os("PATH"))
         .unwrap_or_default();
     let actual = resolve_program(&selected, &path, cwd)
-        .ok_or_else(|| invalid("Hall Codex launch requires an installed Codex CLI 0.163.0"))?;
+        .ok_or_else(|| invalid("Hall Codex launch requires an installed Codex CLI 0.163.0 or newer"))?;
     if actual == own {
         return Err(invalid("Hall Codex bridge cannot invoke itself"));
     }
@@ -107,6 +111,20 @@ fn resolve_program(name: &str, path: &std::ffi::OsStr, cwd: Option<&str>) -> Opt
     })
 }
 
+/// `codex-cli 0.A.B` with A at least [`MIN_CODEX_MINOR`]. Newer releases are
+/// accepted so an upstream CLI update does not take Hall Codex members down;
+/// a CLI that no longer honours the frozen configuration fails at launch.
+fn version_supported(output: &str) -> bool {
+    let Some(version) = output.trim().strip_prefix("codex-cli ") else {
+        return false;
+    };
+    let mut parts = version.split('.').map(|p| p.parse::<u64>());
+    matches!(
+        (parts.next(), parts.next(), parts.next(), parts.next()),
+        (Some(Ok(0)), Some(Ok(minor)), Some(Ok(_)), None) if minor >= MIN_CODEX_MINOR
+    )
+}
+
 async fn verify_version(program: &Path) -> Result<(), AppCommandError> {
     let mut child = Command::new(program)
         .arg("--version")
@@ -124,7 +142,7 @@ async fn verify_version(program: &Path) -> Result<(), AppCommandError> {
         Ok::<_, std::io::Error>(
             status.success()
                 && bytes.len() <= 256
-                && std::str::from_utf8(&bytes).is_ok_and(|value| value.trim() == SUPPORTED_VERSION),
+                && std::str::from_utf8(&bytes).is_ok_and(version_supported),
         )
     };
     if !matches!(
@@ -133,7 +151,7 @@ async fn verify_version(program: &Path) -> Result<(), AppCommandError> {
     ) {
         let _ = child.kill().await;
         return Err(invalid(
-            "Hall Codex bridge supports Codex CLI 0.163.0; check CODEX_PATH or the installed codex",
+            "Hall Codex bridge needs Codex CLI 0.163.0 or newer; check CODEX_PATH or the installed codex",
         ));
     }
     Ok(())
@@ -853,17 +871,20 @@ mod tests {
                 .arg(&pidfile);
             let (mut input, child_input) = tokio::io::duplex(128);
             let task = tokio::spawn(relay(command, child_input, tokio::io::sink(), locked()));
+            let mut ready_pid = None;
             for _ in 0..100 {
-                if pidfile.exists() {
+                // Opening the shell redirection creates the file BEFORE echo
+                // publishes its PID. File existence is not the ready signal.
+                ready_pid = std::fs::read_to_string(&pidfile)
+                    .ok()
+                    .and_then(|text| text.trim().parse::<i32>().ok())
+                    .filter(|pid| *pid > 0);
+                if ready_pid.is_some() {
                     break;
                 }
                 tokio::time::sleep(std::time::Duration::from_millis(10)).await;
             }
-            let pid: i32 = std::fs::read_to_string(&pidfile)
-                .unwrap()
-                .trim()
-                .parse()
-                .unwrap();
+            let pid = ready_pid.expect("fixture published a complete PID");
             if malformed {
                 input.write_all(b"invalid private fixture\n").await.unwrap();
             }
@@ -880,5 +901,27 @@ mod tests {
                 Some(libc::ESRCH)
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod version_tests {
+    use super::version_supported;
+
+    #[test]
+    fn accepts_the_verified_release_and_newer_ones() {
+        assert!(version_supported("codex-cli 0.163.0\n"));
+        assert!(version_supported("codex-cli 0.164.0"));
+        assert!(version_supported("codex-cli 0.200.3"));
+    }
+
+    #[test]
+    fn rejects_older_other_or_malformed_versions() {
+        assert!(!version_supported("codex-cli 0.162.9"));
+        assert!(!version_supported("codex-cli 1.0.0"));
+        assert!(!version_supported("codex-cli 0.164"));
+        assert!(!version_supported("codex-cli 0.164.0-alpha.1"));
+        assert!(!version_supported("codex 0.164.0"));
+        assert!(!version_supported(""));
     }
 }

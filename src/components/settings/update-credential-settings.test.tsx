@@ -34,7 +34,7 @@ it.each([
 })
 it("imports only the file path and shows presence without showing the secret", async () => {
   mount()
-  await screen.findByText("No device credential imported")
+  await screen.findByText("No device credential imported (optional)")
   fireEvent.change(screen.getByLabelText("Credential file path"), {
     target: { value: "/private/device.token" },
   })
@@ -76,7 +76,7 @@ it("hydrates a statically exported settings section on desktop without a mismatc
   await act(async () => {
     root = hydrateRoot(container, element, { onRecoverableError })
   })
-  await screen.findByText("No device credential imported")
+  await screen.findByText("No device credential imported (optional)")
   expect(onRecoverableError).not.toHaveBeenCalled()
   await act(async () => root.unmount())
   container.remove()

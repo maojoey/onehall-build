@@ -3495,7 +3495,13 @@
         "editItem": "編集",
         "deleteItem": "削除",
         "steerItemNow": "現在のターンに挿入",
-        "steerItemAsNote": "メモとして送信し次回チェック時に読ませる"
+        "steerItemAsNote": "メモとして送信し次回チェック時に読ませる",
+        "sending": "送信中、受信確認待ち",
+        "unknown": "結果不明。会話を確認してください。このメッセージは自動再送されません。",
+        "persistenceFailed": "キューの復元用ストレージを利用できません。閉じる前に未送信の内容をコピーしてください。",
+        "copyItem": "メッセージをコピー",
+        "retryVerified": "確認後に再試行",
+        "retryConfirm": "元の会話とリクエストを確認してください。二重実行を避けるため、未受信と確認できた場合のみ続けてください。"
       },
       "welcomeInputPanel": {
         "agentsSettingsPath": "設定 > エージェント",

@@ -249,7 +249,9 @@ async fn updater(
     let authorization =
         desktop_auth::authorization_header(token.as_deref()).map_err(str::to_owned)?;
     let mut headers = http::HeaderMap::new();
-    headers.insert(http::header::AUTHORIZATION, authorization);
+    if let Some(authorization) = authorization {
+        headers.insert(http::header::AUTHORIZATION, authorization);
+    }
     let quitting = app.clone();
     let updater = app
         .updater_builder()

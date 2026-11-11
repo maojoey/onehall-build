@@ -268,8 +268,13 @@ pub async fn remote_save(
         return Err(mismatch());
     }
     target.sync_all().await.map_err(AppCommandError::io)?;
-    drop(target);
+    drop(target.into_std().await);
     directory.validate().map_err(|_| stopped())?;
+    // Windows needs write access to the final parent during rename. Keep a
+    // non-removable child there so it cannot become a reparse point, and keep
+    // DELETE sharing and all ancestor WRITE sharing denied.
+    #[cfg(windows)]
+    let _publication = directory.publication_guard().map_err(AppCommandError::io)?;
     // Persist is atomic and refuses a name created while the download ran.
     pending
         .persist_noclobber(destination)

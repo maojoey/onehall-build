@@ -3495,7 +3495,13 @@
         "editItem": "Editar",
         "deleteItem": "Eliminar",
         "steerItemNow": "Insertar en el turno actual",
-        "steerItemAsNote": "Enviar como nota para la próxima comprobación"
+        "steerItemAsNote": "Enviar como nota para la próxima comprobación",
+        "sending": "Enviando; esperando confirmación",
+        "unknown": "Resultado desconocido. Revisa la conversación; este mensaje no se reenviará automáticamente.",
+        "persistenceFailed": "No se puede guardar la cola para recuperarla. Mantén esta ventana abierta y copia los mensajes pendientes antes de cerrarla.",
+        "copyItem": "Copiar mensaje",
+        "retryVerified": "Reintentar tras verificar",
+        "retryConfirm": "Revisa primero la conversación y la solicitud originales. Continúa solo si confirmaste que no se recibió, para evitar una ejecución duplicada."
       },
       "welcomeInputPanel": {
         "agentsSettingsPath": "Ajustes > Agentes",

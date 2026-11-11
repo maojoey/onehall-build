@@ -2,9 +2,9 @@
 
 import { useCallback, useRef, useState, type PointerEvent } from "react"
 import { Reorder, useDragControls } from "motion/react"
-import { Clock, GripVertical, Pencil, X, Zap } from "lucide-react"
+import { Clock, Copy, GripVertical, Pencil, X, Zap } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { cn } from "@/lib/utils"
+import { cn, copyTextToClipboard } from "@/lib/utils"
 import { draftRidesBlocks } from "@/lib/prompt-draft"
 import type { QueuedMessage } from "@/hooks/use-message-queue"
 
@@ -12,6 +12,7 @@ interface MessageQueueDisplayProps {
   queue: QueuedMessage[]
   onReorder: (items: QueuedMessage[]) => void
   onEdit: (id: string) => void
+  onRetry?: (id: string) => void
   onDelete: (id: string) => void
   editingItemId: string | null
   /**
@@ -33,6 +34,7 @@ interface QueueItemProps {
   index: number
   isEditing: boolean
   onEdit: (id: string) => void
+  onRetry?: (id: string) => void
   onDelete: (id: string) => void
   onSteerItem?: (id: string) => Promise<void> | void
   steerChannel: "native" | "pull"
@@ -48,6 +50,7 @@ function QueueItem({
   isEditing,
   onEdit,
   onDelete,
+  onRetry,
   onSteerItem,
   steerChannel,
   steering,
@@ -66,7 +69,9 @@ function QueueItem({
   //   delivers text, so the backend rejects blocks there — every click would
   //   land on the turn-end fallback, which only moves the row to the front
   //   and never inserts it. It still goes out whole with the next turn.
+  const mutable = !item.status || item.status === "queued"
   const canSteer =
+    mutable &&
     Boolean(onSteerItem) &&
     !isEditing &&
     (steerChannel === "native" || !draftRidesBlocks(item.draft))
@@ -95,7 +100,8 @@ function QueueItem({
       <button
         type="button"
         className="shrink-0 cursor-grab touch-none active:cursor-grabbing p-0"
-        onPointerDown={startDrag}
+        onPointerDown={mutable ? startDrag : undefined}
+        disabled={!mutable}
       >
         <GripVertical className="h-3 w-3 text-muted-foreground/60" />
       </button>
@@ -105,6 +111,27 @@ function QueueItem({
       <span className="min-w-0 flex-1 truncate text-3xs text-foreground/80">
         {item.draft.displayText}
       </span>
+      {item.status === "sending" && <span role="status">{t("sending")}</span>}
+      {item.status === "unknown" && <span role="status">{t("unknown")}</span>}
+      {item.status === "unknown" && (
+        <button
+          type="button"
+          title={t("copyItem")}
+          onClick={() => void copyTextToClipboard(item.draft.displayText)}
+        >
+          <Copy className="h-3 w-3" />
+        </button>
+      )}
+      {item.status === "unknown" && onRetry && (
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm(t("retryConfirm"))) onRetry(item.id)
+          }}
+        >
+          {t("retryVerified")}
+        </button>
+      )}
       {canSteer && (
         <button
           type="button"
@@ -124,6 +151,7 @@ function QueueItem({
       )}
       <button
         type="button"
+        disabled={!mutable}
         onClick={() => onEdit(item.id)}
         className="shrink-0 rounded-sm p-0.5 hover:bg-muted-foreground/15 text-muted-foreground"
         title={t("editItem")}
@@ -132,6 +160,7 @@ function QueueItem({
       </button>
       <button
         type="button"
+        disabled={item.status === "sending"}
         onClick={() => onDelete(item.id)}
         className="shrink-0 rounded-sm p-0.5 hover:bg-muted-foreground/15 text-muted-foreground"
         title={t("deleteItem")}
@@ -147,6 +176,7 @@ export function MessageQueueDisplay({
   onReorder,
   onEdit,
   onDelete,
+  onRetry,
   editingItemId,
   onSteerItem,
   steerChannel = "pull",
@@ -196,6 +226,7 @@ export function MessageQueueDisplay({
             isEditing={editingItemId === item.id}
             onEdit={onEdit}
             onDelete={onDelete}
+            onRetry={onRetry}
             onSteerItem={onSteerItem}
             steerChannel={steerChannel}
             steering={steeringId !== null}

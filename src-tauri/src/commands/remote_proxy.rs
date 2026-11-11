@@ -3431,25 +3431,23 @@ mod tests {
             .unwrap();
     }
 
-    /// #930: Windows resolves `localhost` to `::1` first, and WSL's mirrored
-    /// networking never answers a SYN from Windows to it. The event socket has
-    /// to go on to the address that does answer — as the connection's HTTP
-    /// calls always did — instead of spending its whole timeout on the first.
+    /// DNS fallback must use the address that accepts the event socket. Keep
+    /// both addresses on loopback: TEST-NET may be accepted by a transparent
+    /// proxy, which makes it a false "silent SYN" fixture.
     #[tokio::test]
-    async fn an_event_socket_gets_past_an_address_that_never_answers() {
-        let Ok(listener) = tokio::net::TcpListener::bind("[::1]:0").await else {
-            eprintln!("skipped: no IPv6 loopback to serve the answering address on");
-            return;
-        };
+    async fn an_event_socket_gets_past_a_bound_address_that_does_not_accept() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let port = listener.local_addr().unwrap().port();
         let server = serve_ready_socket(listener);
-        // TEST-NET-1 (RFC 5737) plays `::1`'s part: it is routed nowhere, so a
-        // SYN to it normally goes unanswered. A network that rejects it at
-        // once lets a dial without the race through as well; this test tells
-        // the two apart wherever the SYN is dropped instead.
-        let silent = std::net::SocketAddr::from(([192, 0, 2, 1], port));
-        let answering = std::net::SocketAddr::from((std::net::Ipv6Addr::LOCALHOST, port));
-        let connector = HttpConnector::new_with_resolver(FixedResolver(vec![silent, answering]));
+        // Bound without listen reserves the port but never accepts a socket.
+        // Some kernels refuse and others leave the SYN pending; either way
+        // fallback must reach the listening IPv4 address, using only loopback.
+        let bound = tokio::net::TcpSocket::new_v6().unwrap();
+        let unavailable = std::net::SocketAddr::from((std::net::Ipv6Addr::LOCALHOST, port));
+        bound.bind(unavailable).unwrap();
+        let answering = std::net::SocketAddr::from(([127, 0, 0, 1], port));
+        let connector =
+            HttpConnector::new_with_resolver(FixedResolver(vec![unavailable, answering]));
         let request = ws_request_with_subprotocol_auth(
             &format!("ws://wsl.test:{port}{WS_EVENTS_PATH}"),
             WS_EVENT_PROTOCOL,
@@ -3463,7 +3461,7 @@ mod tests {
             connect_remote_ws_via(connector, request),
         )
         .await
-        .expect("the dial must not spend its whole timeout on the silent address")
+        .expect("the dial reaches the listening address")
         .expect("the answering address accepts the socket");
         expect_ready(&mut socket).await;
         drop(socket);

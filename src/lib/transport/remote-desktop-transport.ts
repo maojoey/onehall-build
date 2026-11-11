@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core"
-import { listen, type UnlistenFn } from "@tauri-apps/api/event"
+import type { UnlistenFn } from "@tauri-apps/api/event"
+import { getCurrentWebview } from "@tauri-apps/api/webview"
 import { WS_READY_CHANNEL } from "./constants"
 import type { AttachTransportHost } from "./web-event-stream"
 import { WebEventStream } from "./web-event-stream"
@@ -112,6 +113,9 @@ function isAuthenticationFailed(err: unknown): boolean {
  * webview labels that explicitly subscribed via this transport, never
  * `app.emit` broadcasting. Two remote workspaces opened side-by-side
  * see entirely separate event streams.
+ * The listener must target this webview too: a global Any listener receives
+ * copies addressed to other windows sharing the same remote connection.
+ * Selective adoption of upstream PR #1085 (4015649bfd7e9778c312011ab3e396e3c1c60cf7).
  */
 export class RemoteDesktopTransport implements Transport {
   private handlers = new Map<string, Set<(payload: unknown) => void>>()
@@ -470,7 +474,7 @@ export class RemoteDesktopTransport implements Transport {
   private async startWs() {
     this.wsStarted = true
     try {
-      const unlisten = await listen<WsFrame>(
+      const unlisten = await getCurrentWebview().listen<WsFrame>(
         `remote-ws-event-${this.config.id}`,
         (event) => this.handleWsEvent(event.payload)
       )

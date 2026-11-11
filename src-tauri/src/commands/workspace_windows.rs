@@ -941,6 +941,15 @@ mod tests {
     #[tokio::test]
     async fn the_list_written_is_the_list_read_back() {
         let db = fresh_in_memory_db().await;
+        // These cases exercise the explicitly supported multi-window setting.
+        crate::hall::hall_set_settings_core(
+            &db.conn,
+            crate::hall::HallSettings {
+                single_window: false,
+            },
+        )
+        .await
+        .unwrap();
         let one = remote_workspace_connection_service::create(
             &db.conn,
             "one",
@@ -990,6 +999,15 @@ mod tests {
     #[tokio::test]
     async fn a_window_opened_by_hand_during_the_restore_is_remembered() {
         let db = fresh_in_memory_db().await;
+        // These cases exercise the explicitly supported multi-window setting.
+        crate::hall::hall_set_settings_core(
+            &db.conn,
+            crate::hall::HallSettings {
+                single_window: false,
+            },
+        )
+        .await
+        .unwrap();
         let a = remote_workspace_connection_service::create(
             &db.conn,
             "a",
@@ -1036,6 +1054,15 @@ mod tests {
     #[tokio::test]
     async fn an_offline_remote_shell_survives_quit_but_an_explicit_close_does_not() {
         let db = fresh_in_memory_db().await;
+        // These cases exercise the explicitly supported multi-window setting.
+        crate::hall::hall_set_settings_core(
+            &db.conn,
+            crate::hall::HallSettings {
+                single_window: false,
+            },
+        )
+        .await
+        .unwrap();
         // Restoring a saved shell must not contact this unreachable host.
         let connection = remote_workspace_connection_service::create(
             &db.conn,
@@ -1184,6 +1211,15 @@ mod tests {
     #[tokio::test]
     async fn a_failed_restore_is_retried_after_quit_without_storing_credentials() {
         let db = fresh_in_memory_db().await;
+        // These cases exercise the explicitly supported multi-window setting.
+        crate::hall::hall_set_settings_core(
+            &db.conn,
+            crate::hall::HallSettings {
+                single_window: false,
+            },
+        )
+        .await
+        .unwrap();
         let remote = remote_workspace_connection_service::create(
             &db.conn,
             "offline",
@@ -1210,5 +1246,49 @@ mod tests {
         assert!(!raw.contains("offline.example"));
         let restored = load_restore(&db.conn, false, true).await;
         assert_eq!(restored.plan.remotes, vec![remote.id]);
+    }
+    #[tokio::test]
+    async fn single_window_restore_keeps_remote_history_for_switching_back() {
+        let db = fresh_in_memory_db().await;
+        let remote = remote_workspace_connection_service::create(
+            &db.conn,
+            "remote",
+            "http://127.0.0.1:1",
+            "test-token",
+            &[],
+        )
+        .await
+        .unwrap();
+        let session = WorkspaceWindowSession::new();
+        session.apply(|state| {
+            state.mark_open(WorkspaceWindow::Remote {
+                connection_id: remote.id,
+            })
+        });
+        session.write_latest(&db.conn).await;
+        let raw = app_metadata_service::get_value(&db.conn, SESSION_KEY)
+            .await
+            .unwrap();
+        let restore = load_restore(&db.conn, false, true).await;
+        assert!(restore.show_local());
+        assert!(restore.plan.remotes.is_empty());
+        assert_eq!(
+            app_metadata_service::get_value(&db.conn, SESSION_KEY)
+                .await
+                .unwrap(),
+            raw
+        );
+        crate::hall::hall_set_settings_core(
+            &db.conn,
+            crate::hall::HallSettings {
+                single_window: false,
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            load_restore(&db.conn, false, true).await.plan.remotes,
+            vec![remote.id]
+        );
     }
 }

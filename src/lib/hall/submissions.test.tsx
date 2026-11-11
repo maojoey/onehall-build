@@ -24,6 +24,7 @@ import {
   submitHallConversation,
   type HallSubmissionInput,
 } from "./submissions"
+import { createMessageQueueStore } from "@/lib/message-queue-store"
 import { captureHallWorkspace, hasHallSubmission } from "./workspace-lifetime"
 
 const remote = {
@@ -417,6 +418,80 @@ describe("submitted conversation survives a workspace switch", () => {
           uri: "file:///uploads/image.png",
         },
       ])
+    }
+  )
+})
+
+describe("queued ordinary conversation in a Hall workspace", () => {
+  it("accepts on the original backend after its view disappeared, with no duplicate prompt", async () => {
+    const queue = createMessageQueueStore()
+    queue.commit([
+      { id: "queued-original", draft: input().draft, modeId: "plan" },
+    ])
+    const claimed = (await queue.beginSend())!
+    holdMode = true
+    submitHallConversation(
+      input({
+        conversationId: 7,
+        clientMessageId: claimed.id,
+        queueId: claimed.id,
+        fromQueueFlush: true,
+        modeId: claimed.modeId,
+      }),
+      (outcome) => queue.settle(claimed.id, outcome, claimed.deliveryToken)
+    )
+    await flush()
+    expect(queue.read()[0].status).toBe("sending")
+    cleanup()
+    switchTo("local")
+    completeMode()
+    await flush()
+    expect(queue.read()).toEqual([])
+    expect(calls.filter((call) => call.command === "acp_prompt")).toEqual([
+      expect.objectContaining({
+        backend: "remote:7",
+        args: expect.objectContaining({
+          clientMessageId: "queued-original",
+          conversationId: 7,
+        }),
+      }),
+    ])
+    expect(messages.get("local")).toBeUndefined()
+  })
+  it.each(["busy", "unknown"] as const)(
+    "keeps a %s queue outcome after switching away",
+    async (outcome) => {
+      const queue = createMessageQueueStore()
+      queue.commit([
+        { id: "queued-original", draft: input().draft, modeId: "plan" },
+      ])
+      const claimed = (await queue.beginSend())!
+      holdPrompt = true
+      submitHallConversation(
+        input({
+          conversationId: 7,
+          clientMessageId: claimed.id,
+          queueId: claimed.id,
+          fromQueueFlush: true,
+        }),
+        (result) => queue.settle(claimed.id, result, claimed.deliveryToken)
+      )
+      await flush()
+      switchTo("local")
+      rejectPrompt!(
+        outcome === "busy"
+          ? { code: "turn_in_progress", message: "turn already in progress" }
+          : new Error("lost acceptance response")
+      )
+      await flush()
+      expect(queue.read()[0]).toMatchObject({
+        id: claimed.id,
+        draft: claimed.draft,
+        status: outcome === "busy" ? "queued" : "unknown",
+      })
+      expect(
+        calls.filter((call) => call.command === "acp_prompt")
+      ).toHaveLength(1)
     }
   )
 })

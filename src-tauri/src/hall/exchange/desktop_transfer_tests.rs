@@ -390,9 +390,11 @@ async fn cancelling_a_remote_download_removes_its_partial_file() {
                 !download.is_finished(),
                 "download ended before the controlled pause"
             );
+            // Windows directory entries can cache size=0 while the writer is
+            // open; query the real path without changing the pause threshold.
             let written = std::fs::read_dir(&root)
                 .unwrap()
-                .any(|entry| entry.unwrap().metadata().unwrap().len() >= 4);
+                .any(|entry| std::fs::metadata(entry.unwrap().path()).unwrap().len() >= 4);
             if written {
                 break;
             }
@@ -537,7 +539,7 @@ async fn a_destination_created_during_download_is_preserved_and_reported_as_a_co
             );
             if std::fs::read_dir(&root)
                 .unwrap()
-                .any(|entry| entry.unwrap().metadata().unwrap().len() >= 4)
+                .any(|entry| std::fs::metadata(entry.unwrap().path()).unwrap().len() >= 4)
             {
                 break;
             }

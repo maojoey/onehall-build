@@ -1,6 +1,6 @@
 {
   "product": "onehall",
-  "version": "0.39.4",
+  "version": "0.39.6",
   "updateMode": "desktop-signed",
   "releasesUrl": "https://github.com/maojoey/onehall/releases",
   "upstream": {

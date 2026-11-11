@@ -18,14 +18,20 @@ pub(crate) fn validate_token(raw: &str) -> Result<&str, &'static str> {
     Ok(token)
 }
 
-pub(crate) fn authorization_header(token: Option<&str>) -> Result<http::HeaderValue, &'static str> {
-    let token = validate_token(
-        token.ok_or("Update credential missing; import this device's credential file")?,
-    )?;
+/// `None` when no credential is stored: the update server serves signed
+/// updates anonymously, so a device without one simply sends no header. A
+/// stored but malformed credential is still an error.
+pub(crate) fn authorization_header(
+    token: Option<&str>,
+) -> Result<Option<http::HeaderValue>, &'static str> {
+    let Some(token) = token else {
+        return Ok(None);
+    };
+    let token = validate_token(token)?;
     let mut value = http::HeaderValue::from_str(&format!("Bearer {token}"))
         .map_err(|_| "Invalid update credential")?;
     value.set_sensitive(true);
-    Ok(value)
+    Ok(Some(value))
 }
 
 pub(crate) fn validate_url(url: &Url, origin: &Url) -> Result<(), &'static str> {
@@ -309,10 +315,10 @@ mod tests {
     }
     #[test]
     fn missing_or_malformed_credential_cannot_authorize_a_request() {
-        assert!(authorization_header(None).is_err());
+        assert!(authorization_header(None).unwrap().is_none());
         assert!(authorization_header(Some("invalid")).is_err());
         let token = "a1".repeat(32);
-        let header = authorization_header(Some(&token)).unwrap();
+        let header = authorization_header(Some(&token)).unwrap().unwrap();
         assert_eq!(header.to_str().unwrap(), format!("Bearer {token}"));
         assert!(header.is_sensitive());
     }

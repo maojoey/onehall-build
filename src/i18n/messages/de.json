@@ -3495,7 +3495,13 @@
         "editItem": "Bearbeiten",
         "deleteItem": "Entfernen",
         "steerItemNow": "In aktuellen Turn einfügen",
-        "steerItemAsNote": "Als Notiz für die nächste Abfrage senden"
+        "steerItemAsNote": "Als Notiz für die nächste Abfrage senden",
+        "sending": "Wird gesendet; Bestätigung ausstehend",
+        "unknown": "Ergebnis unbekannt. Prüfe den Verlauf; diese Nachricht wird nicht automatisch erneut gesendet.",
+        "persistenceFailed": "Die Warteschlange kann nicht zur Wiederherstellung gespeichert werden. Lass dieses Fenster offen und kopiere ungesendete Nachrichten vor dem Schließen.",
+        "copyItem": "Nachricht kopieren",
+        "retryVerified": "Nach Prüfung wiederholen",
+        "retryConfirm": "Prüfe zuerst den ursprünglichen Verlauf und die Anfrage. Fahre nur fort, wenn sie nachweislich nicht empfangen wurde, um eine doppelte Ausführung zu vermeiden."
       },
       "welcomeInputPanel": {
         "agentsSettingsPath": "Einstellungen > Agenten",

@@ -3495,7 +3495,13 @@
         "editItem": "Editar",
         "deleteItem": "Remover",
         "steerItemNow": "Inserir na vez atual",
-        "steerItemAsNote": "Enviar como nota para a próxima verificação"
+        "steerItemAsNote": "Enviar como nota para a próxima verificação",
+        "sending": "Enviando; aguardando confirmação",
+        "unknown": "Resultado desconhecido. Verifique a conversa; esta mensagem não será reenviada automaticamente.",
+        "persistenceFailed": "O armazenamento de recuperação da fila está indisponível. Mantenha esta janela aberta e copie as mensagens não enviadas antes de fechar.",
+        "copyItem": "Copiar mensagem",
+        "retryVerified": "Tentar após verificar",
+        "retryConfirm": "Verifique primeiro a conversa e a solicitação originais. Continue apenas se confirmou que não foram recebidas, para evitar execução duplicada."
       },
       "welcomeInputPanel": {
         "agentsSettingsPath": "Configurações > Agentes",

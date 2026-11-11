@@ -3495,7 +3495,13 @@
         "editItem": "Modifier",
         "deleteItem": "Supprimer",
         "steerItemNow": "Insérer dans le tour en cours",
-        "steerItemAsNote": "Envoyer comme note pour la prochaine vérification"
+        "steerItemAsNote": "Envoyer comme note pour la prochaine vérification",
+        "sending": "Envoi en cours ; confirmation attendue",
+        "unknown": "Résultat inconnu. Vérifiez la conversation ; ce message ne sera pas renvoyé automatiquement.",
+        "persistenceFailed": "Le stockage de récupération de la file est indisponible. Gardez cette fenêtre ouverte et copiez les messages non envoyés avant de la fermer.",
+        "copyItem": "Copier le message",
+        "retryVerified": "Réessayer après vérification",
+        "retryConfirm": "Vérifiez la conversation et la demande initiales. Continuez uniquement si vous avez confirmé leur non-réception afin d’éviter une exécution en double."
       },
       "welcomeInputPanel": {
         "agentsSettingsPath": "Paramètres > Agents",

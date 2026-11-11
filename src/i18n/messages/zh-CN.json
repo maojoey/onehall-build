@@ -246,10 +246,10 @@
   },
   "SystemSettings": {
     "updateCredentialTitle": "本机更新凭据",
-    "updateCredentialDescription": "导入为本机签发的私密凭据文件。凭据保存在操作系统钥匙串中，与堂务和 GitHub 凭据独立。导入不会开启自动更新。",
+    "updateCredentialDescription": "更新无需凭据即可使用；仅当更新服务要求时，才导入为本机签发的私密凭据文件。凭据保存在操作系统钥匙串中，与堂务和 GitHub 凭据独立。导入不会开启自动更新。",
     "updateCredentialLoading": "正在读取凭据状态…",
     "updateCredentialPresent": "本机凭据已存入操作系统钥匙串",
-    "updateCredentialAbsent": "尚未导入本机凭据",
+    "updateCredentialAbsent": "未导入本机凭据（可选）",
     "updateCredentialPath": "凭据文件路径",
     "updateCredentialImport": "导入凭据文件",
     "updateCredentialRemove": "移除本机凭据",
@@ -3495,7 +3495,13 @@
         "editItem": "编辑",
         "deleteItem": "删除",
         "steerItemNow": "插入当前回合",
-        "steerItemAsNote": "作为留言，供下次检查时读取"
+        "steerItemAsNote": "作为留言，供下次检查时读取",
+        "sending": "正在发送，等待接收确认",
+        "unknown": "结果未知，请先核对会话；此消息不会自动重发。",
+        "persistenceFailed": "队列恢复存储不可用。请保留此窗口，并在关闭前复制未发送内容。",
+        "copyItem": "复制消息",
+        "retryVerified": "核对后重试",
+        "retryConfirm": "请先核对原会话与请求。仅在确认未接收时继续，避免重复执行。"
       },
       "welcomeInputPanel": {
         "agentsSettingsPath": "设置 > Agents",

@@ -3495,7 +3495,13 @@
         "editItem": "編輯",
         "deleteItem": "刪除",
         "steerItemNow": "插入目前回合",
-        "steerItemAsNote": "作為留言，供下次檢查時讀取"
+        "steerItemAsNote": "作為留言，供下次檢查時讀取",
+        "sending": "正在傳送，等待接收確認",
+        "unknown": "結果未知，請先核對對話；此訊息不會自動重送。",
+        "persistenceFailed": "佇列復原儲存不可用。請保留此視窗，並在關閉前複製未傳送內容。",
+        "copyItem": "複製訊息",
+        "retryVerified": "核對後重試",
+        "retryConfirm": "請先核對原對話與請求。僅在確認未接收時繼續，避免重複執行。"
       },
       "welcomeInputPanel": {
         "agentsSettingsPath": "設定 > Agents",
