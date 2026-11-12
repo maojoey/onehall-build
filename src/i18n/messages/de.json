@@ -5761,7 +5761,25 @@
         "unreachable": "Cannot connect — retry when available",
         "auth_failed": "Access credential needs updating"
       },
-      "unavailable": "Diese Zweigstelle ist nicht verfügbar. Das Verzeichnis prüfen."
+      "unavailable": "Diese Zweigstelle ist nicht verfügbar. Das Verzeichnis prüfen.",
+      "adapters": {
+        "open": "Agent-Versionen",
+        "agent": "Agent",
+        "headquarters": "Zentrale",
+        "branch": "Diese Filiale",
+        "match": "Version der Zentrale verwenden",
+        "unavailable": "nicht verfügbar",
+        "safe": "Die Filiale installiert die Version neben der aktuellen und testet sie zuerst; bei einem Fehler bleibt die alte Version.",
+        "matched": "Jetzt auf {version}.",
+        "failed": "Wechsel nicht möglich: {message}"
+      },
+      "target": {
+        "title": "Wo diese Aufgabe laufen kann",
+        "loading": "Filiale wird gelesen …",
+        "unavailable": "Mitglieder und Agents der Filiale konnten nicht gelesen werden.",
+        "noMembers": "Keine aktiven Mitglieder in dieser Filiale.",
+        "note": "Die Person an diesem Rechner nimmt die Aufgabe an und wählt, welches Mitglied sie ausführt."
+      }
     },
     "artifacts": {
       "title": "Aufgabendateien und Status",
@@ -8136,5 +8154,14 @@
         "probeFailed": "Der integrierte Browser konnte nicht bestätigen, dass er den entfernten Host über den Tunnel erreicht. Versuche es gleich noch einmal."
       }
     }
+  },
+  "AgentUpdates": {
+    "chip": "{count} Agent-Updates",
+    "title": "Agent-Updates verfügbar",
+    "update": "Aktualisieren",
+    "updated": "Auf {version} aktualisiert.",
+    "failed": "Update fehlgeschlagen: {message}",
+    "safe": "Jedes Update wird neben der aktuellen Version installiert und getestet, bevor es übernimmt; die alte Version bleibt erhalten.",
+    "auto": "Updates automatisch anwenden"
   }
 }

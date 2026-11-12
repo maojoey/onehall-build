@@ -7,6 +7,8 @@ import { StatusBarAlerts } from "@/components/layout/status-bar-alerts"
 import { StatusBarMcp } from "@/components/layout/status-bar-mcp"
 import { StatusBarComputer } from "@/components/layout/status-bar-computer"
 import { StatusBarUpdate } from "@/components/layout/status-bar-update"
+import { StatusBarBranches } from "@/components/layout/status-bar-branches"
+import { StatusBarAgentUpdates } from "@/components/layout/status-bar-agent-updates"
 import { CommandDropdown } from "@/components/layout/command-dropdown"
 import { QuickActionsDropdown } from "@/components/layout/quick-actions-dropdown"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -26,6 +28,8 @@ export function StatusBar() {
           <StatusBarStats />
         </div>
         <div className="flex items-center gap-3">
+          <StatusBarBranches />
+          <StatusBarAgentUpdates />
           <StatusBarUpdate />
           <CommandDropdown />
           <StatusBarMcp />
@@ -63,6 +67,8 @@ export function StatusBar() {
         <StatusBarStats />
       </div>
       <div className="flex items-center gap-4">
+        <StatusBarBranches />
+        <StatusBarAgentUpdates />
         <StatusBarUpdate />
         <StatusBarTasks />
         {/* Command launcher (moved from the aux "session details" tab), taking

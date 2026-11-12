@@ -5781,7 +5781,25 @@
         "unreachable": "Cannot connect — retry when available",
         "auth_failed": "Access credential needs updating"
       },
-      "unavailable": "This branch is unavailable. Check the branch directory."
+      "unavailable": "This branch is unavailable. Check the branch directory.",
+      "adapters": {
+        "open": "Agent versions",
+        "agent": "Agent",
+        "headquarters": "Headquarters",
+        "branch": "This branch",
+        "match": "Use headquarters version",
+        "unavailable": "unavailable",
+        "safe": "The branch installs the version next to its current one and tests it first; if the test fails it keeps the old version.",
+        "matched": "Now on {version}.",
+        "failed": "Could not switch: {message}"
+      },
+      "target": {
+        "title": "Where this task can run",
+        "loading": "Reading the branch…",
+        "unavailable": "Could not read the branch's members and agents.",
+        "noMembers": "No active members on this branch.",
+        "note": "The person on that machine accepts the task and chooses which member runs it."
+      }
     },
     "artifacts": {
       "title": "Task files and status",
@@ -8136,5 +8154,14 @@
         "probeFailed": "The built-in browser couldn't confirm that it reaches the remote host through the tunnel. Try again in a moment."
       }
     }
+  },
+  "AgentUpdates": {
+    "chip": "{count, plural, one {1 agent update} other {# agent updates}}",
+    "title": "Agent updates available",
+    "update": "Update",
+    "updated": "Updated to {version}.",
+    "failed": "Update failed: {message}",
+    "safe": "Each update is installed beside the current one and tested before it takes over; the old version is kept.",
+    "auto": "Apply updates automatically"
   }
 }

@@ -5781,7 +5781,25 @@
         "unreachable": "暂时无法连接，可稍后重试",
         "auth_failed": "需要更新访问凭据"
       },
-      "unavailable": "分堂不可用，请检查分堂名册。"
+      "unavailable": "分堂不可用，请检查分堂名册。",
+      "adapters": {
+        "open": "智能体版本",
+        "agent": "智能体",
+        "headquarters": "总堂",
+        "branch": "本分堂",
+        "match": "改用总堂的版本",
+        "unavailable": "不可用",
+        "safe": "分堂会把该版本装在现有版本旁边并先测试；测试失败则保持旧版本。",
+        "matched": "已切换到 {version}。",
+        "failed": "无法切换：{message}"
+      },
+      "target": {
+        "title": "任务可在此运行的位置",
+        "loading": "正在读取分堂…",
+        "unavailable": "无法读取该分堂的成员和智能体。",
+        "noMembers": "该分堂没有启用的成员。",
+        "note": "由那台机器上的人接收任务并选择由哪位成员执行。"
+      }
     },
     "artifacts": {
       "title": "任务文件与状态",
@@ -8136,5 +8154,14 @@
         "probeFailed": "内置浏览器无法确认它能通过隧道访问远端主机。请稍后重试。"
       }
     }
+  },
+  "AgentUpdates": {
+    "chip": "{count} 个智能体更新",
+    "title": "有可用的智能体更新",
+    "update": "更新",
+    "updated": "已更新到 {version}。",
+    "failed": "更新失败：{message}",
+    "safe": "新版本会装在旧版本旁边并先测试，通过后才切换；旧版本会保留。",
+    "auto": "自动应用更新"
   }
 }

@@ -5761,7 +5761,25 @@
         "unreachable": "Cannot connect — retry when available",
         "auth_failed": "Access credential needs updating"
       },
-      "unavailable": "Esta filial está indisponível. Verifique o diretório de filiais."
+      "unavailable": "Esta filial está indisponível. Verifique o diretório de filiais.",
+      "adapters": {
+        "open": "Versões dos agentes",
+        "agent": "Agente",
+        "headquarters": "Sede",
+        "branch": "Esta filial",
+        "match": "Usar a versão da sede",
+        "unavailable": "indisponível",
+        "safe": "A filial instala a versão ao lado da atual e a testa primeiro; se falhar, mantém a anterior.",
+        "matched": "Agora na {version}.",
+        "failed": "Não foi possível trocar: {message}"
+      },
+      "target": {
+        "title": "Onde esta tarefa pode ser executada",
+        "loading": "Lendo a filial…",
+        "unavailable": "Não foi possível ler os membros e agentes da filial.",
+        "noMembers": "Nenhum membro ativo nesta filial.",
+        "note": "A pessoa naquela máquina aceita a tarefa e escolhe qual membro a executa."
+      }
     },
     "artifacts": {
       "title": "Arquivos e estado da tarefa",
@@ -8136,5 +8154,14 @@
         "probeFailed": "O navegador integrado não conseguiu confirmar que alcança o host remoto pelo túnel. Tente novamente em instantes."
       }
     }
+  },
+  "AgentUpdates": {
+    "chip": "{count} atualizações de agentes",
+    "title": "Há atualizações de agentes",
+    "update": "Atualizar",
+    "updated": "Atualizado para {version}.",
+    "failed": "Falha na atualização: {message}",
+    "safe": "Cada atualização é instalada ao lado da atual e testada antes de assumir; a versão anterior é mantida.",
+    "auto": "Aplicar atualizações automaticamente"
   }
 }

@@ -5761,7 +5761,25 @@
         "unreachable": "Cannot connect — retry when available",
         "auth_failed": "Access credential needs updating"
       },
-      "unavailable": "分堂を利用できません。分堂一覧を確認してください。"
+      "unavailable": "分堂を利用できません。分堂一覧を確認してください。",
+      "adapters": {
+        "open": "エージェントのバージョン",
+        "agent": "エージェント",
+        "headquarters": "本部",
+        "branch": "この支部",
+        "match": "本部のバージョンに合わせる",
+        "unavailable": "利用不可",
+        "safe": "支部は現在のバージョンの隣にインストールしてテストします。失敗した場合は以前のバージョンのままです。",
+        "matched": "{version} に切り替えました。",
+        "failed": "切り替えできませんでした: {message}"
+      },
+      "target": {
+        "title": "このタスクを実行できる場所",
+        "loading": "支部を読み込み中…",
+        "unavailable": "支部のメンバーとエージェントを読み取れませんでした。",
+        "noMembers": "この支部に有効なメンバーはいません。",
+        "note": "そのマシンの担当者がタスクを受け入れ、実行するメンバーを選びます。"
+      }
     },
     "artifacts": {
       "title": "タスクのファイルと状態",
@@ -8136,5 +8154,14 @@
         "probeFailed": "内蔵ブラウザーがトンネル経由でリモートホストに届くことを確認できませんでした。しばらくしてからもう一度お試しください。"
       }
     }
+  },
+  "AgentUpdates": {
+    "chip": "エージェントの更新 {count} 件",
+    "title": "エージェントの更新があります",
+    "update": "更新",
+    "updated": "{version} に更新しました。",
+    "failed": "更新に失敗しました: {message}",
+    "safe": "更新は現在のバージョンの隣にインストールされ、テストに通ってから切り替わります。以前のバージョンは残ります。",
+    "auto": "更新を自動で適用"
   }
 }

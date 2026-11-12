@@ -5761,7 +5761,25 @@
         "unreachable": "Cannot connect — retry when available",
         "auth_failed": "Access credential needs updating"
       },
-      "unavailable": "Esta sede no está disponible. Revisa el directorio de sedes."
+      "unavailable": "Esta sede no está disponible. Revisa el directorio de sedes.",
+      "adapters": {
+        "open": "Versiones de agentes",
+        "agent": "Agente",
+        "headquarters": "Sede central",
+        "branch": "Esta sede",
+        "match": "Usar la versión de la sede central",
+        "unavailable": "no disponible",
+        "safe": "La sede instala la versión junto a la actual y la prueba primero; si falla, conserva la anterior.",
+        "matched": "Ahora en {version}.",
+        "failed": "No se pudo cambiar: {message}"
+      },
+      "target": {
+        "title": "Dónde puede ejecutarse esta tarea",
+        "loading": "Leyendo la sede…",
+        "unavailable": "No se pudieron leer los miembros y agentes de la sede.",
+        "noMembers": "No hay miembros activos en esta sede.",
+        "note": "La persona de esa máquina acepta la tarea y elige qué miembro la ejecuta."
+      }
     },
     "artifacts": {
       "title": "Archivos y estado de la tarea",
@@ -8136,5 +8154,14 @@
         "probeFailed": "El navegador integrado no pudo confirmar que llega al host remoto a través del túnel. Vuelve a intentarlo en un momento."
       }
     }
+  },
+  "AgentUpdates": {
+    "chip": "{count} actualizaciones de agentes",
+    "title": "Hay actualizaciones de agentes",
+    "update": "Actualizar",
+    "updated": "Actualizado a {version}.",
+    "failed": "Error al actualizar: {message}",
+    "safe": "Cada actualización se instala junto a la actual y se prueba antes de activarse; se conserva la versión anterior.",
+    "auto": "Aplicar actualizaciones automáticamente"
   }
 }

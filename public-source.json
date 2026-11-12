@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "23bae165dd60168971115fa672f7dca897e2353d",
-  "version": "0.39.7",
+  "sourceCommit": "9ffa76e9dbe30db5e81b2655d4f6248d2ca74059",
+  "version": "0.39.8",
   "files": [
     {
       "mode": "100644",
@@ -192,13 +192,13 @@
     {
       "mode": "100644",
       "path": "onehall.release.json",
-      "sha256": "7b7a1c67620e259bd7b62e549c5c27ea5202317de8a73cbdab15c618ee551102",
+      "sha256": "6eb3aaaa18c6fcab3d354f2f0a287209b396c74affecc73cb10646ea5b671b48",
       "size": 311
     },
     {
       "mode": "100644",
       "path": "package.json",
-      "sha256": "1ac00a118ec3c9b2be71b7381c1e2599551701be4b824a7ee231e55b0c972b4e",
+      "sha256": "657f14a0c2eee379d5a28b8ead9053f0ac8630a87b9f74af794d9152dfa98c64",
       "size": 5290
     },
     {
@@ -318,13 +318,13 @@
     {
       "mode": "100644",
       "path": "src-tauri/Cargo.lock",
-      "sha256": "755a68d39420c9165e23fbe0efc1156f89682145fe49be61f1bb3e99c6b85391",
+      "sha256": "d130c2863937ad0b4c160f5153cf3f4a5bb4cdef4d21dc993dc755a57762a4e3",
       "size": 226144
     },
     {
       "mode": "100644",
       "path": "src-tauri/Cargo.toml",
-      "sha256": "1b563a00fede876810a8a9ff18f611a7e09f726c5b3a6e32434452fd2f402065",
+      "sha256": "fbe8a87781308cfe6eaa5cbe41a2906be32757be2623857624afb26e44781691",
       "size": 19754
     },
     {
@@ -5826,7 +5826,7 @@
     {
       "mode": "100644",
       "path": "src-tauri/tauri.conf.json",
-      "sha256": "fa99f33889c6bd9462f8c770b915209ca34997c1077419d5c5f0a9b5a5999142",
+      "sha256": "a49af535ce6991d99286c5b2bf432632bb516abe2dc41003c7d751809d43bfa8",
       "size": 1598
     },
     {
@@ -8699,6 +8699,18 @@
     },
     {
       "mode": "100644",
+      "path": "src/components/hall/branches/adapter-panel.test.tsx",
+      "sha256": "e2d1f33ae708fb06ccd64c273f7619cfabcddaae993e71b1d37d59c92966f444",
+      "size": 3189
+    },
+    {
+      "mode": "100644",
+      "path": "src/components/hall/branches/adapter-panel.tsx",
+      "sha256": "01198cbc62eccb9fd00fba4c169b7d284bf6758559e5fa27c0728a3a485ad38f",
+      "size": 5319
+    },
+    {
+      "mode": "100644",
       "path": "src/components/hall/branches/dispatch-panel.test.tsx",
       "sha256": "1850e06074c11b36e15c95e19c12507f87fb36cb27e2b96bc3b874610c55c4b2",
       "size": 12788
@@ -8720,6 +8732,18 @@
       "path": "src/components/hall/branches/local-inbox.tsx",
       "sha256": "6985ce9831f2c64256cec1b9b747a6e51919912c51f1fe461b34c0937b9c8c06",
       "size": 7906
+    },
+    {
+      "mode": "100644",
+      "path": "src/components/hall/branches/target-info.test.tsx",
+      "sha256": "bb6adbc9a9f9548c7b8b42e0def850c30a44dc1e0b4ed67f0703cd872e05c05c",
+      "size": 2281
+    },
+    {
+      "mode": "100644",
+      "path": "src/components/hall/branches/target-info.tsx",
+      "sha256": "4adf895db2c7ba6b6cbb677ee9c85d42b377560d463afcdd1a70d389875bd5a1",
+      "size": 2372
     },
     {
       "mode": "100644",
@@ -9288,8 +9312,8 @@
     {
       "mode": "100644",
       "path": "src/components/layout/hall-branch-directory.tsx",
-      "sha256": "2cbdd839e0a1a6f58149b4f74982adbc2ca5d805733ee659fe3ca3f56191d6f4",
-      "size": 10486
+      "sha256": "48fa3dc3500ddee22aac552b85928fd8d3a77482b865bd71b9235fa7b5410fdf",
+      "size": 12533
     },
     {
       "mode": "100644",
@@ -9449,6 +9473,18 @@
     },
     {
       "mode": "100644",
+      "path": "src/components/layout/status-bar-agent-updates.test.tsx",
+      "sha256": "fa3af190141a352ad59f920cab90a0e3aa4ec2d8e321dfde6972048dc3a563df",
+      "size": 3327
+    },
+    {
+      "mode": "100644",
+      "path": "src/components/layout/status-bar-agent-updates.tsx",
+      "sha256": "62e8a66ca5c59a7e48acabc39eacde62b7571d25768235dd999e60ebf3f94a12",
+      "size": 3667
+    },
+    {
+      "mode": "100644",
       "path": "src/components/layout/status-bar-alerts.notify.test.tsx",
       "sha256": "cf58aedd7bb0e786d07e629e8571b24ace0ac5e6bbea8252dea67d248cfab438",
       "size": 3686
@@ -9464,6 +9500,18 @@
       "path": "src/components/layout/status-bar-alerts.tsx",
       "sha256": "37d112c00256fda493a1fc8d7c54993d71cae08876bf85a62bc5aaa60bbbf258",
       "size": 7404
+    },
+    {
+      "mode": "100644",
+      "path": "src/components/layout/status-bar-branches.test.tsx",
+      "sha256": "7a9fca603bc823709efc80f2dbd9b4a8bcd09bfeb90f2c8e16f4089933aa7781",
+      "size": 1883
+    },
+    {
+      "mode": "100644",
+      "path": "src/components/layout/status-bar-branches.tsx",
+      "sha256": "70ae069e2c52ef6f3330c95140448d5714bbe0d54dc3e4b09b09d2a0a4d11dea",
+      "size": 1232
     },
     {
       "mode": "100644",
@@ -9516,8 +9564,8 @@
     {
       "mode": "100644",
       "path": "src/components/layout/status-bar.tsx",
-      "sha256": "492ac67ef85b5c0ca6aa5fb8ac58b49f494575a7ff789d8d753bf139264650c9",
-      "size": 4163
+      "sha256": "d0e8986bb7fc55a4f9735e34f3cc08e7edd252481ee9463c3d072f345f8ebf4b",
+      "size": 4456
     },
     {
       "mode": "100644",
@@ -13302,62 +13350,62 @@
     {
       "mode": "100644",
       "path": "src/i18n/messages/ar.json",
-      "sha256": "88f4720d0e854993592286d2efd51e440f92f4d4ef325e89340e32df2a4e6d6f",
-      "size": 575641
+      "sha256": "25bb1f988122fb64967e17c4d576e0246c5d9c61a712edfd78e4d35c79162c51",
+      "size": 577201
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/de.json",
-      "sha256": "8874a03c2d0752b2959811d6468b97603d73e9f06fa2032698d4867e1a61bdc7",
-      "size": 486731
+      "sha256": "17d5e6f2483072f792842a6990d241c61e0225c58f873af90db943eef21167b9",
+      "size": 488031
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/en.json",
-      "sha256": "9d6339bf678709ede83bfa693254fb5abdf1ef1b5f071d3f75beb8bf915c410f",
-      "size": 435192
+      "sha256": "87811e5f09b7d897d67a58a54df448e2d86bbd129193838c4e9f026cf3f029e8",
+      "size": 436418
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/es.json",
-      "sha256": "0c8f1f61bd23e3cf4b5e25def54897cf90cc7effd6b3b44d27a967ad3661e3df",
-      "size": 480302
+      "sha256": "2fecc58148af1427290eeab647c31dddb68baae39a9d9465fb1f54278bc032a2",
+      "size": 481561
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/fr.json",
-      "sha256": "c5568ce5d8d9b64c3b25b28c167d156c08580c720d67c4cc688b91d2a7fa9c05",
-      "size": 497110
+      "sha256": "81d1bc0ce462ec022d10112d97154f9dad68f0040e59858cc179dfdaae8aa787",
+      "size": 498436
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/ja.json",
-      "sha256": "d188debbc15ec472008de2529c1b0de2ba1e8af2b788a0e772f9e1e1903bffe2",
-      "size": 548955
+      "sha256": "322dc95b376f384605415940bf41e820bf6110c1906bc47ef271ed0b1b4d0967",
+      "size": 550472
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/ko.json",
-      "sha256": "6019043e3ea1f35d602310ffe6e7ba9abaea08372188a50bc3a8ca79fa5a8b62",
-      "size": 496168
+      "sha256": "ed2161492d8063d23731ec99615709a8779815346a97360d094340a821b5aff1",
+      "size": 497531
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/pt.json",
-      "sha256": "8d97e55cf24d719b3f177c0dcbe5032abfefa252cfde9ce287aa16315d0835ff",
-      "size": 475437
+      "sha256": "3809e7ca2f5204d7aa5e5824502e7d14bff58670e2dc039f5c6a72edde877453",
+      "size": 476668
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/zh-CN.json",
-      "sha256": "bb394b13c152f1f609e418d0c754c0aa80f5e8fff204f4b4b93f447c1b9fb670",
-      "size": 423616
+      "sha256": "0b4545b78d5ca3af336d8ed2d044b7fc0d498b6736bb818a7a59d6dcff8e888f",
+      "size": 424759
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/zh-TW.json",
-      "sha256": "24accf535fe33b0b62309c11922122842ead6dd66e7be01dc1cba970c01a41f7",
-      "size": 426722
+      "sha256": "579844044f205e78288b30aeef4281d3af5897127de8fd53b05cd7304a1fa6fd",
+      "size": 427868
     },
     {
       "mode": "100644",
@@ -13676,6 +13724,18 @@
       "path": "src/lib/agent-tool-groups.ts",
       "sha256": "1ae0be2bb7d10273bc19f0d004bc355b2d9b3569575798494d23e0025dc04d80",
       "size": 4480
+    },
+    {
+      "mode": "100644",
+      "path": "src/lib/agent-update-check.test.ts",
+      "sha256": "bac7ca1edd11a91b11b8f1f2b70324fd181cf69653e2d6ebdbaa42a8b582fd78",
+      "size": 3428
+    },
+    {
+      "mode": "100644",
+      "path": "src/lib/agent-update-check.ts",
+      "sha256": "430a0f904795422b65bf3ec76b2b98e490a3f4f2242f4ee33ff68191ecec1157",
+      "size": 3236
     },
     {
       "mode": "100644",
@@ -14927,6 +14987,12 @@
     },
     {
       "mode": "100644",
+      "path": "src/lib/hall/adapter-sync.ts",
+      "sha256": "b618ea9d7552e3247312fa4ce4e928639dea06adc188eb7848236f3bf5f3707c",
+      "size": 1563
+    },
+    {
+      "mode": "100644",
       "path": "src/lib/hall/api.ts",
       "sha256": "bbb5ef05c1af49e339bce87f8b82c9a9ac7882a9f240ec2afc15b27beaff5964",
       "size": 523
@@ -15086,6 +15152,12 @@
       "path": "src/lib/hall/submissions.ts",
       "sha256": "064d77fa0c1146017cf0b0c25a0fbf2d8395b71cbeab3c97f9c324dddda18fbc",
       "size": 4958
+    },
+    {
+      "mode": "100644",
+      "path": "src/lib/hall/target-info.ts",
+      "sha256": "c611abf94df81fe7f0ffcb66aeb5e9655f742fb842231339cbecee41033995cf",
+      "size": 1675
     },
     {
       "mode": "100644",

@@ -5761,7 +5761,25 @@
         "unreachable": "Cannot connect — retry when available",
         "auth_failed": "Access credential needs updating"
       },
-      "unavailable": "분당을 사용할 수 없습니다. 분당 목록을 확인하세요."
+      "unavailable": "분당을 사용할 수 없습니다. 분당 목록을 확인하세요.",
+      "adapters": {
+        "open": "에이전트 버전",
+        "agent": "에이전트",
+        "headquarters": "본부",
+        "branch": "이 지부",
+        "match": "본부 버전으로 맞추기",
+        "unavailable": "사용 불가",
+        "safe": "지부는 현재 버전 옆에 설치하고 먼저 테스트합니다. 실패하면 이전 버전을 유지합니다.",
+        "matched": "{version}(으)로 전환했습니다.",
+        "failed": "전환할 수 없습니다: {message}"
+      },
+      "target": {
+        "title": "이 작업을 실행할 수 있는 곳",
+        "loading": "지부를 읽는 중…",
+        "unavailable": "지부의 멤버와 에이전트를 읽을 수 없습니다.",
+        "noMembers": "이 지부에 활성 멤버가 없습니다.",
+        "note": "그 기기의 담당자가 작업을 수락하고 실행할 멤버를 선택합니다."
+      }
     },
     "artifacts": {
       "title": "작업 파일 및 상태",
@@ -8136,5 +8154,14 @@
         "probeFailed": "내장 브라우저가 터널을 통해 원격 호스트에 도달하는지 확인할 수 없습니다. 잠시 후 다시 시도하세요."
       }
     }
+  },
+  "AgentUpdates": {
+    "chip": "에이전트 업데이트 {count}개",
+    "title": "에이전트 업데이트가 있습니다",
+    "update": "업데이트",
+    "updated": "{version}(으)로 업데이트했습니다.",
+    "failed": "업데이트 실패: {message}",
+    "safe": "업데이트는 현재 버전 옆에 설치되고 테스트를 통과해야 전환됩니다. 이전 버전은 유지됩니다.",
+    "auto": "업데이트 자동 적용"
   }
 }

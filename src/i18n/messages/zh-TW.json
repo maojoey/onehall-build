@@ -5761,7 +5761,25 @@
         "unreachable": "暫時無法連線，可稍後重試",
         "auth_failed": "需要更新存取憑證"
       },
-      "unavailable": "分堂無法使用，請檢查分堂名冊。"
+      "unavailable": "分堂無法使用，請檢查分堂名冊。",
+      "adapters": {
+        "open": "智慧體版本",
+        "agent": "智慧體",
+        "headquarters": "總堂",
+        "branch": "本分堂",
+        "match": "改用總堂的版本",
+        "unavailable": "無法使用",
+        "safe": "分堂會把該版本裝在現有版本旁邊並先測試；測試失敗則維持舊版本。",
+        "matched": "已切換到 {version}。",
+        "failed": "無法切換：{message}"
+      },
+      "target": {
+        "title": "任務可在此執行的位置",
+        "loading": "正在讀取分堂…",
+        "unavailable": "無法讀取該分堂的成員和智慧體。",
+        "noMembers": "該分堂沒有啟用的成員。",
+        "note": "由那台機器上的人接收任務並選擇由哪位成員執行。"
+      }
     },
     "artifacts": {
       "title": "任務檔案與狀態",
@@ -8136,5 +8154,14 @@
         "probeFailed": "內建瀏覽器無法確認它能透過通道連到遠端主機。請稍後再試。"
       }
     }
+  },
+  "AgentUpdates": {
+    "chip": "{count} 個智慧體更新",
+    "title": "有可用的智慧體更新",
+    "update": "更新",
+    "updated": "已更新到 {version}。",
+    "failed": "更新失敗：{message}",
+    "safe": "新版本會裝在舊版本旁邊並先測試，通過後才切換；舊版本會保留。",
+    "auto": "自動套用更新"
   }
 }

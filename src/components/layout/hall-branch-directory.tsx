@@ -3,10 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
 import { BranchDispatchPanel } from "@/components/hall/branches/dispatch-panel"
+import { BranchAdapterPanel } from "@/components/hall/branches/adapter-panel"
+import { BranchTargetInfo } from "@/components/hall/branches/target-info"
 import { dispatchClient } from "@/lib/hall/dispatch"
 import { MonitorCloud, RefreshCw } from "lucide-react"
 import { branchClient, type HallBranchSummary } from "@/lib/hall/branches"
 import { toErrorMessage } from "@/lib/app-error"
+import { openRemoteWorkspace } from "@/lib/remote-workspace"
 import { useHallWorkspaceStore } from "@/stores/hall-workspace-store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,9 +25,13 @@ import {
 export function HallBranchDirectory({
   headquartersConnectionId,
   web,
+  multiWindow = false,
 }: {
   headquartersConnectionId: number | null
   web: boolean
+  /** One window per machine (single-window off): a branch opens as its own
+   *  window instead of a tab, and the trigger sits in the status bar. */
+  multiWindow?: boolean
 }) {
   const t = useTranslations("Hall.branches")
   const client = useMemo(
@@ -37,6 +44,9 @@ export function HallBranchDirectory({
   )
   const [dispatchBranch, setDispatchBranch] =
     useState<HallBranchSummary | null>(null)
+  const [adapterBranch, setAdapterBranch] = useState<HallBranchSummary | null>(
+    null
+  )
   const [open, setOpen] = useState(false)
   const [rows, setRows] = useState<HallBranchSummary[]>([])
   const [loading, setLoading] = useState(false)
@@ -96,6 +106,7 @@ export function HallBranchDirectory({
   useEffect(() => {
     setRows([])
     setDispatchBranch(null)
+    setAdapterBranch(null)
     setBusy(false)
     setToken("")
     if (open) void refresh()
@@ -110,7 +121,11 @@ export function HallBranchDirectory({
     setError(null)
     try {
       if (web) useHallWorkspaceStore.getState().openWebBranch(row.id, row.name)
-      else {
+      else if (multiWindow) {
+        const connection = await client.connect(row.id)
+        if (generation !== epoch.current) return
+        await openRemoteWorkspace(connection.connectionId)
+      } else {
         const connection = await client.connect(row.id)
         if (generation !== epoch.current) return
         useHallWorkspaceStore
@@ -154,7 +169,11 @@ export function HallBranchDirectory({
     <>
       <button
         type="button"
-        className="my-1 ml-auto flex items-center gap-1 rounded-md bg-primary px-2.5 font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
+        className={
+          multiWindow
+            ? "flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-accent hover:text-foreground"
+            : "my-1 ml-auto flex items-center gap-1 rounded-md bg-primary px-2.5 font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
+        }
         onClick={() => setOpen(true)}
       >
         <MonitorCloud className="h-3.5 w-3.5" aria-hidden />
@@ -214,6 +233,16 @@ export function HallBranchDirectory({
                 >
                   {t("dispatch")}
                 </Button>
+                {!web && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={busy || !row.enabled}
+                    onClick={() => setAdapterBranch(row)}
+                  >
+                    {t("adapters.open")}
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -228,10 +257,30 @@ export function HallBranchDirectory({
           {dispatchBranch && (
             <div className="space-y-2 border-t pt-3">
               <p className="font-medium">{dispatchBranch.name}</p>
+              {!web && (
+                <BranchTargetInfo
+                  key={`target:${headquartersConnectionId}:${dispatchBranch.id}`}
+                  connectBranch={async () =>
+                    (await client.connect(dispatchBranch.id)).connectionId
+                  }
+                />
+              )}
               <BranchDispatchPanel
                 key={`${headquartersConnectionId ?? "web"}:${dispatchBranch.id}`}
                 client={dispatch}
                 branchId={dispatchBranch.id}
+              />
+            </div>
+          )}
+          {adapterBranch && !web && (
+            <div className="space-y-2 border-t pt-3">
+              <p className="font-medium">{adapterBranch.name}</p>
+              <BranchAdapterPanel
+                key={`${headquartersConnectionId}:${adapterBranch.id}`}
+                headquartersConnectionId={headquartersConnectionId}
+                connectBranch={async () =>
+                  (await client.connect(adapterBranch.id)).connectionId
+                }
               />
             </div>
           )}

@@ -5761,7 +5761,25 @@
         "unreachable": "Cannot connect — retry when available",
         "auth_failed": "Access credential needs updating"
       },
-      "unavailable": "Cette antenne est indisponible. Consultez la liste des antennes."
+      "unavailable": "Cette antenne est indisponible. Consultez la liste des antennes.",
+      "adapters": {
+        "open": "Versions des agents",
+        "agent": "Agent",
+        "headquarters": "Siège",
+        "branch": "Cette antenne",
+        "match": "Utiliser la version du siège",
+        "unavailable": "indisponible",
+        "safe": "L'antenne installe la version à côté de l'actuelle et la teste d'abord ; en cas d'échec, elle garde l'ancienne.",
+        "matched": "Désormais en {version}.",
+        "failed": "Changement impossible : {message}"
+      },
+      "target": {
+        "title": "Où cette tâche peut s'exécuter",
+        "loading": "Lecture de l'antenne…",
+        "unavailable": "Impossible de lire les membres et agents de l'antenne.",
+        "noMembers": "Aucun membre actif dans cette antenne.",
+        "note": "La personne sur cette machine accepte la tâche et choisit quel membre l'exécute."
+      }
     },
     "artifacts": {
       "title": "Fichiers et état de la tâche",
@@ -8136,5 +8154,14 @@
         "probeFailed": "Le navigateur intégré n'a pas pu confirmer qu'il atteint l'hôte distant par le tunnel. Réessayez dans un instant."
       }
     }
+  },
+  "AgentUpdates": {
+    "chip": "{count} mises à jour d'agents",
+    "title": "Mises à jour d'agents disponibles",
+    "update": "Mettre à jour",
+    "updated": "Mis à jour vers {version}.",
+    "failed": "Échec de la mise à jour : {message}",
+    "safe": "Chaque mise à jour est installée à côté de la version actuelle et testée avant de la remplacer ; l'ancienne version est conservée.",
+    "auto": "Appliquer les mises à jour automatiquement"
   }
 }
