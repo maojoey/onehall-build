@@ -4,6 +4,7 @@ import type { AgentType } from "@/lib/types"
 import { adapterSyncClient, SYNCED_AGENTS } from "./adapter-sync"
 
 export interface TargetMember {
+  memberId: string
   name: string
   role: string
   engine: string
@@ -23,8 +24,8 @@ export interface TargetInfo {
 
 /**
  * What a task sent to another machine can land on: its members and the agent
- * versions behind them. Read-only. The machine's own user still chooses who
- * runs an accepted task.
+ * versions behind them. Read-only. The sender may name a member; the
+ * machine's own user still accepts the task, with that member preselected.
  */
 export async function readTargetInfo(
   connectionId: number
@@ -56,7 +57,8 @@ export async function readTargetInfo(
     ),
   ])
   return {
-    members: members.map(({ name, role, engine, enabled }) => ({
+    members: members.map(({ memberId, name, role, engine, enabled }) => ({
+      memberId,
       name,
       role,
       engine,

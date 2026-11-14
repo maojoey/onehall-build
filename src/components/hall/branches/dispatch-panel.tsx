@@ -24,9 +24,12 @@ import { Textarea } from "@/components/ui/textarea"
 export function BranchDispatchPanel({
   client,
   branchId,
+  memberRef = "worker",
 }: {
   client: DispatchClient
   branchId: string
+  /** The branch member asked for, or "worker" to let the branch choose. */
+  memberRef?: string
 }) {
   const t = useTranslations("Hall.dispatch")
   const id = useId()
@@ -181,7 +184,7 @@ export function BranchDispatchPanel({
             return
           const draft = {
             branchId,
-            memberRef: "worker",
+            memberRef,
             title: title.trim(),
             description,
           }

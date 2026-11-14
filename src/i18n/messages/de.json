@@ -5201,7 +5201,8 @@
       "openTasks": "Aufgaben öffnen",
       "rejected": "Abgelehnt",
       "linkedTaskHint": "Angenommen. Eine verknüpfte lokale Aufgabe ist vorhanden. Öffnen Sie Aufgaben, um den aktuellen Status zu prüfen.",
-      "refreshTasksHint": "Laden Sie die verknüpfte Aufgabe über Aktualisieren. Ihre Änderungen und Filter bleiben erhalten."
+      "refreshTasksHint": "Laden Sie die verknüpfte Aufgabe über Aktualisieren. Ihre Änderungen und Filter bleiben erhalten.",
+      "requested": "Der Absender hat {name} angefragt."
     },
     "dispatch": {
       "syncFailed": "Status konnte nicht aktualisiert werden. Die gespeicherte Aufgabe bleibt erhalten.",
@@ -5778,7 +5779,9 @@
         "loading": "Filiale wird gelesen …",
         "unavailable": "Mitglieder und Agents der Filiale konnten nicht gelesen werden.",
         "noMembers": "Keine aktiven Mitglieder in dieser Filiale.",
-        "note": "Die Person an diesem Rechner nimmt die Aufgabe an und wählt, welches Mitglied sie ausführt."
+        "note": "Die Person an diesem Rechner nimmt die Aufgabe an und wählt, welches Mitglied sie ausführt.",
+        "anyMember": "Dort entscheiden lassen",
+        "pickNote": "Wähle ein Mitglied, um es namentlich anzufragen. Die Person an dem Rechner nimmt die Aufgabe weiterhin an."
       }
     },
     "artifacts": {

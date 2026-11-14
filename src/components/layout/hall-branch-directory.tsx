@@ -44,6 +44,7 @@ export function HallBranchDirectory({
   )
   const [dispatchBranch, setDispatchBranch] =
     useState<HallBranchSummary | null>(null)
+  const [targetMember, setTargetMember] = useState<string | null>(null)
   const [adapterBranch, setAdapterBranch] = useState<HallBranchSummary | null>(
     null
   )
@@ -106,6 +107,7 @@ export function HallBranchDirectory({
   useEffect(() => {
     setRows([])
     setDispatchBranch(null)
+    setTargetMember(null)
     setAdapterBranch(null)
     setBusy(false)
     setToken("")
@@ -229,7 +231,10 @@ export function HallBranchDirectory({
                   variant="outline"
                   size="sm"
                   disabled={busy || !row.enabled}
-                  onClick={() => setDispatchBranch(row)}
+                  onClick={() => {
+                    setDispatchBranch(row)
+                    setTargetMember(null)
+                  }}
                 >
                   {t("dispatch")}
                 </Button>
@@ -263,12 +268,15 @@ export function HallBranchDirectory({
                   connectBranch={async () =>
                     (await client.connect(dispatchBranch.id)).connectionId
                   }
+                  selected={targetMember}
+                  onSelect={setTargetMember}
                 />
               )}
               <BranchDispatchPanel
                 key={`${headquartersConnectionId ?? "web"}:${dispatchBranch.id}`}
                 client={dispatch}
                 branchId={dispatchBranch.id}
+                memberRef={targetMember ?? "worker"}
               />
             </div>
           )}

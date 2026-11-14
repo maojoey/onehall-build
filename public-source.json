@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "9ffa76e9dbe30db5e81b2655d4f6248d2ca74059",
-  "version": "0.39.8",
+  "sourceCommit": "4792e7e13bf4a0c7b62bbc8f089631a148a12125",
+  "version": "0.39.9",
   "files": [
     {
       "mode": "100644",
@@ -192,13 +192,13 @@
     {
       "mode": "100644",
       "path": "onehall.release.json",
-      "sha256": "6eb3aaaa18c6fcab3d354f2f0a287209b396c74affecc73cb10646ea5b671b48",
+      "sha256": "a355011a08245e8c3d9d41733585568e6bfc0e314782db92bda523c29a55241e",
       "size": 311
     },
     {
       "mode": "100644",
       "path": "package.json",
-      "sha256": "657f14a0c2eee379d5a28b8ead9053f0ac8630a87b9f74af794d9152dfa98c64",
+      "sha256": "27a2a65d163cc7131242cf6fa2693495e632b8d2e2048bf316a7568b40f4b79a",
       "size": 5290
     },
     {
@@ -318,13 +318,13 @@
     {
       "mode": "100644",
       "path": "src-tauri/Cargo.lock",
-      "sha256": "d130c2863937ad0b4c160f5153cf3f4a5bb4cdef4d21dc993dc755a57762a4e3",
+      "sha256": "8acbebc918b0f2f713bd7e393bec6a757a63e98f4a58ae69fbd72014a1d2aea5",
       "size": 226144
     },
     {
       "mode": "100644",
       "path": "src-tauri/Cargo.toml",
-      "sha256": "fbe8a87781308cfe6eaa5cbe41a2906be32757be2623857624afb26e44781691",
+      "sha256": "9253146735ca0495acb4c9c092661cf88e1e5992955f88d688df347be6a9d5fd",
       "size": 19754
     },
     {
@@ -5826,7 +5826,7 @@
     {
       "mode": "100644",
       "path": "src-tauri/tauri.conf.json",
-      "sha256": "a49af535ce6991d99286c5b2bf432632bb516abe2dc41003c7d751809d43bfa8",
+      "sha256": "9b7467c9978f80520eca3b24b40afd4eefb23be3bc7f58e8318390489d67ece2",
       "size": 1598
     },
     {
@@ -8712,38 +8712,38 @@
     {
       "mode": "100644",
       "path": "src/components/hall/branches/dispatch-panel.test.tsx",
-      "sha256": "1850e06074c11b36e15c95e19c12507f87fb36cb27e2b96bc3b874610c55c4b2",
-      "size": 12788
+      "sha256": "b5fff3168cd633cc70e69c462573fd34a8fd69550517b46fb149f1d848219b73",
+      "size": 13503
     },
     {
       "mode": "100644",
       "path": "src/components/hall/branches/dispatch-panel.tsx",
-      "sha256": "a3cf92188bf83c917725a74ed01fcd06bcb2068760aa732096f6d854bef23392",
-      "size": 13224
+      "sha256": "e3ef24ec90f75e4bc8892ee7e51bec20d10bd553b7f5562be1579a105d1e9e88",
+      "size": 13335
     },
     {
       "mode": "100644",
       "path": "src/components/hall/branches/local-inbox.test.tsx",
-      "sha256": "c8ec7dff7759f9cf12103fca770c2e6bbdb9fad00b2298de2366ff87a77ad052",
-      "size": 6571
+      "sha256": "a257af2ff1bbe2f3f50bae5d013e18c1b9da0cfef1101463d726717d753d5be8",
+      "size": 9144
     },
     {
       "mode": "100644",
       "path": "src/components/hall/branches/local-inbox.tsx",
-      "sha256": "6985ce9831f2c64256cec1b9b747a6e51919912c51f1fe461b34c0937b9c8c06",
-      "size": 7906
+      "sha256": "dfd4375b7ab1b900746d795855b7d308d1cb9119d29afb81c7789d93cb7955ba",
+      "size": 9033
     },
     {
       "mode": "100644",
       "path": "src/components/hall/branches/target-info.test.tsx",
-      "sha256": "bb6adbc9a9f9548c7b8b42e0def850c30a44dc1e0b4ed67f0703cd872e05c05c",
-      "size": 2281
+      "sha256": "8cda8e1b58f65f11a697fb00ddc1ebc4440f0a856cefb86f6d0be1a4ab8c5e82",
+      "size": 3281
     },
     {
       "mode": "100644",
       "path": "src/components/hall/branches/target-info.tsx",
-      "sha256": "4adf895db2c7ba6b6cbb677ee9c85d42b377560d463afcdd1a70d389875bd5a1",
-      "size": 2372
+      "sha256": "81244ea55a0b65e88e96935a962a6186d2c2f7c47f674ccf77a107a12f3f1a34",
+      "size": 3603
     },
     {
       "mode": "100644",
@@ -8898,8 +8898,8 @@
     {
       "mode": "100644",
       "path": "src/components/hall/tasks/task-editor.tsx",
-      "sha256": "aa12cce780ba3f4d8b7013ab053f57c9b1c74cff3d1ad255155f66006b5bbf8e",
-      "size": 7902
+      "sha256": "0dfe6ceb9a1943e161689e3742fe2c5854cf28476524639eba2bfc07f7b80cf5",
+      "size": 8004
     },
     {
       "mode": "100644",
@@ -9030,8 +9030,8 @@
     {
       "mode": "100644",
       "path": "src/components/layout/aux-panel-git-changes-tab.test.tsx",
-      "sha256": "7cfdfce79b10574bf5ea718c63fa9f1678f61709e976f680bf43321b9b4b2255",
-      "size": 27335
+      "sha256": "2e2ac81363aada76c294de8af1fef28d50259e2cd6b1262ef1e2b474d58f97ba",
+      "size": 27359
     },
     {
       "mode": "100644",
@@ -9312,8 +9312,8 @@
     {
       "mode": "100644",
       "path": "src/components/layout/hall-branch-directory.tsx",
-      "sha256": "48fa3dc3500ddee22aac552b85928fd8d3a77482b865bd71b9235fa7b5410fdf",
-      "size": 12533
+      "sha256": "eac875eea0a4d99ce2899edd4ba9dbe931e6cafb582153ab6605215ce352e367",
+      "size": 12855
     },
     {
       "mode": "100644",
@@ -9702,8 +9702,8 @@
     {
       "mode": "100644",
       "path": "src/components/message/activity/activity-rows.test.tsx",
-      "sha256": "645c1a7c088342bfc628df27614dc85af1c815f3473ab57aafb03c27536f7d8b",
-      "size": 29325
+      "sha256": "153e84bf767bd6634cd9bc5fb429f5c9c20523da8d033699051ddb671b8334b7",
+      "size": 29333
     },
     {
       "mode": "100644",
@@ -13350,62 +13350,62 @@
     {
       "mode": "100644",
       "path": "src/i18n/messages/ar.json",
-      "sha256": "25bb1f988122fb64967e17c4d576e0246c5d9c61a712edfd78e4d35c79162c51",
-      "size": 577201
+      "sha256": "fe7bf391ee87af5775079dcc5f7bc6743de9e93b413ca42dd301be1308876b44",
+      "size": 577461
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/de.json",
-      "sha256": "17d5e6f2483072f792842a6990d241c61e0225c58f873af90db943eef21167b9",
-      "size": 488031
+      "sha256": "09ab6ffbf069b66669e2616cae971d1747771d88436a5acc69aaddb23164944a",
+      "size": 488267
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/en.json",
-      "sha256": "87811e5f09b7d897d67a58a54df448e2d86bbd129193838c4e9f026cf3f029e8",
-      "size": 436418
+      "sha256": "150a7f87f1789495888b4085d0532c058b9014c64eaab2d998add58cccf033ca",
+      "size": 436622
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/es.json",
-      "sha256": "2fecc58148af1427290eeab647c31dddb68baae39a9d9465fb1f54278bc032a2",
-      "size": 481561
+      "sha256": "f5e7566da1713565aed96d16a590f572105dc82bf25737cfc6868a413022db0b",
+      "size": 481775
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/fr.json",
-      "sha256": "81d1bc0ce462ec022d10112d97154f9dad68f0040e59858cc179dfdaae8aa787",
-      "size": 498436
+      "sha256": "6aa158cd6c087a23a373e32a9dbd511479db78c0a21782a4f90f2dca1c7c2094",
+      "size": 498668
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/ja.json",
-      "sha256": "322dc95b376f384605415940bf41e820bf6110c1906bc47ef271ed0b1b4d0967",
-      "size": 550472
+      "sha256": "9c032502a7a2c920b392513153ed9804718257f2ee6ada78b55a76b3ceb8abe6",
+      "size": 550711
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/ko.json",
-      "sha256": "ed2161492d8063d23731ec99615709a8779815346a97360d094340a821b5aff1",
-      "size": 497531
+      "sha256": "aa3afb9c7f40793ed5a60932c8854609b7109f4b90134f0b7cc12bb0c6e45a17",
+      "size": 497764
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/pt.json",
-      "sha256": "3809e7ca2f5204d7aa5e5824502e7d14bff58670e2dc039f5c6a72edde877453",
-      "size": 476668
+      "sha256": "0259172b5b5bb760ceaf39b53072b2798bf688cd473f199aac0b3d464494f1b0",
+      "size": 476872
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/zh-CN.json",
-      "sha256": "0b4545b78d5ca3af336d8ed2d044b7fc0d498b6736bb818a7a59d6dcff8e888f",
-      "size": 424759
+      "sha256": "5637b6f5b73ee37f8c246d4e48bb9f454fc2efb2daf8f62e7803a345ab233891",
+      "size": 424955
     },
     {
       "mode": "100644",
       "path": "src/i18n/messages/zh-TW.json",
-      "sha256": "579844044f205e78288b30aeef4281d3af5897127de8fd53b05cd7304a1fa6fd",
-      "size": 427868
+      "sha256": "a8866074082c50a4b1b9f53bdab9e014314e6f411fa2b0e12a3792ea0de46eac",
+      "size": 428064
     },
     {
       "mode": "100644",
@@ -15156,8 +15156,8 @@
     {
       "mode": "100644",
       "path": "src/lib/hall/target-info.ts",
-      "sha256": "c611abf94df81fe7f0ffcb66aeb5e9655f742fb842231339cbecee41033995cf",
-      "size": 1675
+      "sha256": "a9d00edc7ea5c285f017d1f8c5ca7f6e10bd6277f6799c6501281c716372710c",
+      "size": 1763
     },
     {
       "mode": "100644",

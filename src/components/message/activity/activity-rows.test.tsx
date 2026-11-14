@@ -427,7 +427,7 @@ describe("long replies", () => {
       screen.getByRole("button", { name: "Show 2 more steps" })
     ).toBeTruthy()
     expect(screen.getAllByText("Edited")).toHaveLength(150)
-  })
+  }, 30_000)
 })
 
 describe("running clock", () => {

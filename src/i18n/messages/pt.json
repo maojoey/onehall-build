@@ -5201,7 +5201,8 @@
       "openTasks": "Abrir tarefas",
       "rejected": "Rejeitada",
       "linkedTaskHint": "Aceite. Existe uma tarefa local associada. Abra Tarefas para consultar o estado atual.",
-      "refreshTasksHint": "Use Atualizar em Tarefas para carregar a tarefa associada. As suas alterações e filtros são preservados."
+      "refreshTasksHint": "Use Atualizar em Tarefas para carregar a tarefa associada. As suas alterações e filtros são preservados.",
+      "requested": "O remetente pediu {name}."
     },
     "dispatch": {
       "syncFailed": "Não foi possível atualizar o estado. A tarefa salva foi mantida.",
@@ -5778,7 +5779,9 @@
         "loading": "Lendo a filial…",
         "unavailable": "Não foi possível ler os membros e agentes da filial.",
         "noMembers": "Nenhum membro ativo nesta filial.",
-        "note": "A pessoa naquela máquina aceita a tarefa e escolhe qual membro a executa."
+        "note": "A pessoa naquela máquina aceita a tarefa e escolhe qual membro a executa.",
+        "anyMember": "Deixar que escolham",
+        "pickNote": "Escolha um membro para pedi-lo pelo nome. A pessoa nessa máquina ainda aceita a tarefa."
       }
     },
     "artifacts": {

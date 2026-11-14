@@ -5221,7 +5221,8 @@
       "openTasks": "Open Tasks",
       "rejected": "Rejected",
       "linkedTaskHint": "Accepted. A linked local task exists. Open Tasks to check its current status.",
-      "refreshTasksHint": "Use Refresh in Tasks to load the linked task. Your current edits and filters are preserved."
+      "refreshTasksHint": "Use Refresh in Tasks to load the linked task. Your current edits and filters are preserved.",
+      "requested": "The sender asked for {name}."
     },
     "dispatch": {
       "syncFailed": "Status could not be refreshed. The saved task has been retained.",
@@ -5798,7 +5799,9 @@
         "loading": "Reading the branch…",
         "unavailable": "Could not read the branch's members and agents.",
         "noMembers": "No active members on this branch.",
-        "note": "The person on that machine accepts the task and chooses which member runs it."
+        "note": "The person on that machine accepts the task and chooses which member runs it.",
+        "anyMember": "Let them choose",
+        "pickNote": "Pick a member to ask for them by name. The person on that machine still accepts the task."
       }
     },
     "artifacts": {

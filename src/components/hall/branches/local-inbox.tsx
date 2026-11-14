@@ -128,7 +128,11 @@ function InboxCard({
     isExchangeManifest(item.exchangeManifest)
   const pending =
     item.status === "awaiting_confirmation" && !accepted && !rejected
-  async function choose(value: string) {
+  // The sender may name one of this machine's members; preselect it and its
+  // newest snapshot. Accepting is still this person's click.
+  const requested = members.find((m) => m.memberId === item.memberRef)
+  const requestedId = pending ? (requested?.memberId ?? null) : null
+  async function choose(value: string, pickNewest = false) {
     const generation = ++epoch.current
     setMember(value)
     setSnapshot("")
@@ -137,11 +141,29 @@ function InboxCard({
     if (!value) return
     try {
       const result = await client.snapshots(value)
-      if (generation === epoch.current) setSnapshots(result)
+      if (generation !== epoch.current) return
+      setSnapshots(result)
+      if (pickNewest) {
+        const newest = result
+          .filter((s) => s.projectId !== undefined)
+          .reduce<HallMemberSnapshot | null>(
+            (best, s) => (!best || s.createdAt > best.createdAt ? s : best),
+            null
+          )
+        if (newest) setSnapshot(newest.snapshotId)
+      }
     } catch (e) {
       if (generation === epoch.current) setError(toErrorMessage(e))
     }
   }
+  const preselected = useRef(false)
+  useEffect(() => {
+    if (!requestedId || preselected.current) return
+    preselected.current = true
+    void choose(requestedId, true)
+    // choose is recreated each render; preselection runs once per card.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedId])
   async function decide(accept: boolean) {
     if (
       locked.current ||
@@ -196,6 +218,11 @@ function InboxCard({
       )}
       {pending && (
         <>
+          {requested && (
+            <p className="text-sm text-muted-foreground">
+              {t("requested", { name: requested.name })}
+            </p>
+          )}
           <Label htmlFor={`${id}-member`}>{t("member")}</Label>
           <select
             id={`${id}-member`}

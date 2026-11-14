@@ -5201,7 +5201,8 @@
       "openTasks": "Abrir tareas",
       "rejected": "Rechazada",
       "linkedTaskHint": "Aceptada. Existe una tarea local vinculada. Abra Tareas para consultar su estado actual.",
-      "refreshTasksHint": "Use Actualizar en Tareas para cargar la tarea vinculada. Se conservan sus cambios y filtros actuales."
+      "refreshTasksHint": "Use Actualizar en Tareas para cargar la tarea vinculada. Se conservan sus cambios y filtros actuales.",
+      "requested": "El remitente pidió a {name}."
     },
     "dispatch": {
       "syncFailed": "No se pudo actualizar el estado. La tarea guardada se conserva.",
@@ -5778,7 +5779,9 @@
         "loading": "Leyendo la sede…",
         "unavailable": "No se pudieron leer los miembros y agentes de la sede.",
         "noMembers": "No hay miembros activos en esta sede.",
-        "note": "La persona de esa máquina acepta la tarea y elige qué miembro la ejecuta."
+        "note": "La persona de esa máquina acepta la tarea y elige qué miembro la ejecuta.",
+        "anyMember": "Que elijan ellos",
+        "pickNote": "Elige un miembro para pedirlo por su nombre. La persona de esa máquina sigue aceptando la tarea."
       }
     },
     "artifacts": {

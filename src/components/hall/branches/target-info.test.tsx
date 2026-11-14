@@ -1,13 +1,31 @@
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl"
 import { describe, expect, it, vi } from "vitest"
 
 import enMessages from "@/i18n/messages/en.json"
 
 const members = [
-  { name: "worker", role: "builder", engine: "codex", enabled: true },
-  { name: "reviewer", role: "", engine: "claude_code", enabled: true },
-  { name: "retired", role: "", engine: "codex", enabled: false },
+  {
+    memberId: "m-worker",
+    name: "worker",
+    role: "builder",
+    engine: "codex",
+    enabled: true,
+  },
+  {
+    memberId: "m-reviewer",
+    name: "reviewer",
+    role: "",
+    engine: "claude_code",
+    enabled: true,
+  },
+  {
+    memberId: "m-retired",
+    name: "retired",
+    role: "",
+    engine: "codex",
+    enabled: false,
+  },
 ]
 let membersFail = false
 
@@ -65,5 +83,31 @@ describe("BranchTargetInfo", () => {
     expect((await screen.findByRole("alert")).textContent).toMatch(
       /Could not read/
     )
+  })
+
+  it("lets the sender name a member, or leave the choice to the branch", async () => {
+    membersFail = false
+    const onSelect = vi.fn()
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BranchTargetInfo
+          connectBranch={async () => 7}
+          selected={null}
+          onSelect={onSelect}
+        />
+      </NextIntlClientProvider>
+    )
+    const reviewer = await screen.findByRole("radio", { name: /reviewer/ })
+    expect(
+      (
+        screen.getByRole("radio", {
+          name: /Let them choose/,
+        }) as HTMLInputElement
+      ).checked
+    ).toBe(true)
+    expect(screen.queryByRole("radio", { name: /retired/ })).toBeNull()
+    fireEvent.click(reviewer)
+    expect(onSelect).toHaveBeenCalledWith("m-reviewer")
+    expect(screen.getByText(/still accepts the task/)).toBeTruthy()
   })
 })

@@ -333,3 +333,27 @@ it("desktop: an inspection failure is shown and nothing is staged", async () => 
   expect(await screen.findByText("Choose a regular file")).toBeInTheDocument()
   expect(exchange.prepareInput).not.toHaveBeenCalled()
 })
+
+it("sends the member the sender asked for", async () => {
+  const c = {
+    submissionContext: "hq:1",
+    list: vi.fn().mockResolvedValue([]),
+    create: vi.fn().mockResolvedValue(row),
+    sync: vi.fn().mockResolvedValue(row),
+  }
+  render(
+    <BranchDispatchPanel
+      client={c as DispatchClient}
+      branchId="win"
+      memberRef="m-reviewer"
+    />
+  )
+  fireEvent.change(screen.getByLabelText("title"), { target: { value: "Sum" } })
+  fireEvent.change(screen.getByLabelText("description"), {
+    target: { value: "Add" },
+  })
+  fireEvent.click(screen.getByRole("button", { name: "send" }))
+  await waitFor(() =>
+    expect(c.create.mock.calls[0][0]).toMatchObject({ memberRef: "m-reviewer" })
+  )
+})

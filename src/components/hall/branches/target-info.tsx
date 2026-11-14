@@ -9,9 +9,14 @@ import { readTargetInfo, type TargetInfo } from "@/lib/hall/target-info"
 /** What is on the machine a task is about to be sent to. */
 export function BranchTargetInfo({
   connectBranch,
+  selected = null,
+  onSelect,
 }: {
   /** Resolves the connection id that reaches the branch. */
   connectBranch: () => Promise<number>
+  /** The member the sender asks for; null leaves the choice to the branch. */
+  selected?: string | null
+  onSelect?: (memberId: string | null) => void
 }) {
   const t = useTranslations("Hall.branches.target")
   // Built inline by the parent; a ref keeps the load from rerunning each render.
@@ -53,16 +58,48 @@ export function BranchTargetInfo({
         <p className="text-muted-foreground">{t("noMembers")}</p>
       ) : (
         <ul className="space-y-0.5">
-          {members.map((m) => (
-            <li key={`${m.name}:${m.engine}`}>
-              <span className="font-medium">{m.name}</span>
-              <span className="text-muted-foreground">
-                {" "}
-                · {m.engine}
-                {m.role ? ` · ${m.role}` : ""}
-              </span>
+          {onSelect && (
+            <li>
+              <label className="flex items-center gap-1.5">
+                <input
+                  type="radio"
+                  name="branch-target-member"
+                  checked={selected === null}
+                  onChange={() => onSelect(null)}
+                />
+                <span>{t("anyMember")}</span>
+              </label>
             </li>
-          ))}
+          )}
+          {members.map((m) => {
+            const text = (
+              <>
+                <span className="font-medium">{m.name}</span>
+                <span className="text-muted-foreground">
+                  {" "}
+                  · {m.engine}
+                  {m.role ? ` · ${m.role}` : ""}
+                </span>
+              </>
+            )
+            return (
+              <li key={m.memberId}>
+                {onSelect ? (
+                  <label className="flex items-center gap-1.5">
+                    <input
+                      type="radio"
+                      name="branch-target-member"
+                      checked={selected === m.memberId}
+                      onChange={() => onSelect(m.memberId)}
+                    />
+                    <span>{text}</span>
+                  </label>
+                ) : (
+                  text
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
       <p className="text-muted-foreground">
@@ -70,7 +107,9 @@ export function BranchTargetInfo({
           .map((a) => `${a.agent} ${a.adapter ?? "—"} (CLI ${a.cli ?? "—"})`)
           .join(" · ")}
       </p>
-      <p className="text-2xs text-muted-foreground">{t("note")}</p>
+      <p className="text-2xs text-muted-foreground">
+        {t(onSelect ? "pickNote" : "note")}
+      </p>
     </div>
   )
 }

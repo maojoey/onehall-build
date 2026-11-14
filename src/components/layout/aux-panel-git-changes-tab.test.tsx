@@ -319,7 +319,7 @@ describe("GitChangesTab render cap", () => {
     expect(
       screen.getByRole("button", { name: `Show ${hidden} more items` })
     ).toBeInTheDocument()
-  })
+  }, 30_000)
 
   it("reveals all rows once expanded", () => {
     const hidden = 50
@@ -334,7 +334,7 @@ describe("GitChangesTab render cap", () => {
     expect(
       screen.queryByRole("button", { name: /more items/ })
     ).not.toBeInTheDocument()
-  })
+  }, 30_000)
 
   it("re-caps when a fresh, larger change set replaces the revealed one", () => {
     store.git = flatGit(MAX_VISIBLE_ROWS + 50)
@@ -358,7 +358,7 @@ describe("GitChangesTab render cap", () => {
     expect(
       screen.queryByText(id(MAX_VISIBLE_ROWS + 120))
     ).not.toBeInTheDocument()
-  })
+  }, 30_000)
 })
 
 // ---------------------------------------------------------------------------

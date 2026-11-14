@@ -203,3 +203,87 @@ it("does not accept a malformed attachment manifest even after explicit member s
   fireEvent.click(screen.getByRole("button", { name: "reject" }))
   await waitFor(() => expect(client.reject).toHaveBeenCalledTimes(1))
 })
+
+it("preselects the member the sender asked for and its newest snapshot, but waits for the click", async () => {
+  const item = {
+    issuerId: "issuer",
+    dispatchId: "dispatch",
+    title: "Sum",
+    description: "Add",
+    revision: 1,
+    status: "awaiting_confirmation",
+    memberRef: "m-reviewer",
+    launchAllowed: false,
+  }
+  const c = {
+    list: vi.fn().mockResolvedValue([item]),
+    members: vi.fn().mockResolvedValue([
+      { memberId: "m-worker", name: "Worker", enabled: true },
+      { memberId: "m-reviewer", name: "Reviewer", enabled: true },
+    ]),
+    snapshots: vi.fn().mockResolvedValue([
+      {
+        snapshotId: "old",
+        memberId: "m-reviewer",
+        projectId: 3,
+        createdAt: "2026-11-01T00:00:00Z",
+      },
+      {
+        snapshotId: "new",
+        memberId: "m-reviewer",
+        projectId: 3,
+        createdAt: "2026-11-12T00:00:00Z",
+      },
+    ]),
+    accept: vi.fn().mockResolvedValue({ taskId: "task" }),
+    reject: vi.fn(),
+  }
+  render(<LocalBranchInbox client={c as unknown as LocalInboxClient} />)
+  await screen.findByText("requested")
+  await waitFor(() => expect(c.snapshots).toHaveBeenCalledWith("m-reviewer"))
+  await waitFor(() =>
+    expect((screen.getByLabelText("snapshot") as HTMLSelectElement).value).toBe(
+      "new"
+    )
+  )
+  expect((screen.getByLabelText("member") as HTMLSelectElement).value).toBe(
+    "m-reviewer"
+  )
+  expect(c.accept).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole("button", { name: "accept" }))
+  await waitFor(() =>
+    expect(c.accept).toHaveBeenCalledWith(
+      expect.objectContaining({ memberId: "m-reviewer", snapshotId: "new" })
+    )
+  )
+})
+
+it("leaves the choice open when the sender did not name a local member", async () => {
+  const c = {
+    list: vi.fn().mockResolvedValue([
+      {
+        issuerId: "issuer",
+        dispatchId: "dispatch",
+        title: "Sum",
+        description: "Add",
+        revision: 1,
+        status: "awaiting_confirmation",
+        memberRef: "worker",
+        launchAllowed: false,
+      },
+    ]),
+    members: vi
+      .fn()
+      .mockResolvedValue([
+        { memberId: "m-worker", name: "Worker", enabled: true },
+      ]),
+    snapshots: vi.fn().mockResolvedValue([]),
+    accept: vi.fn(),
+    reject: vi.fn(),
+  }
+  render(<LocalBranchInbox client={c as unknown as LocalInboxClient} />)
+  await screen.findByText("Sum")
+  expect(screen.queryByText("requested")).toBeNull()
+  expect(c.snapshots).not.toHaveBeenCalled()
+  expect((screen.getByLabelText("member") as HTMLSelectElement).value).toBe("")
+})

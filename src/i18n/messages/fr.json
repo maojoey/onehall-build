@@ -5201,7 +5201,8 @@
       "openTasks": "Ouvrir les tâches",
       "rejected": "Refusée",
       "linkedTaskHint": "Acceptée. Une tâche locale associée existe. Ouvrez Tâches pour consulter son état actuel.",
-      "refreshTasksHint": "Utilisez Actualiser dans Tâches pour charger la tâche associée. Vos modifications et filtres sont conservés."
+      "refreshTasksHint": "Utilisez Actualiser dans Tâches pour charger la tâche associée. Vos modifications et filtres sont conservés.",
+      "requested": "L’expéditeur a demandé {name}."
     },
     "dispatch": {
       "syncFailed": "Impossible d’actualiser l’état. La tâche enregistrée est conservée.",
@@ -5778,7 +5779,9 @@
         "loading": "Lecture de l'antenne…",
         "unavailable": "Impossible de lire les membres et agents de l'antenne.",
         "noMembers": "Aucun membre actif dans cette antenne.",
-        "note": "La personne sur cette machine accepte la tâche et choisit quel membre l'exécute."
+        "note": "La personne sur cette machine accepte la tâche et choisit quel membre l'exécute.",
+        "anyMember": "Les laisser choisir",
+        "pickNote": "Choisissez un membre pour le demander nommément. La personne sur cette machine accepte toujours la tâche."
       }
     },
     "artifacts": {

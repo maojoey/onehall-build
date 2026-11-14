@@ -57,10 +57,12 @@ export function TaskEditor({
   const alive = useRef(false)
   const generation = useRef(0)
   useEffect(() => {
+    // A counter, not a DOM node: the cleanup must bump the live value.
+    const requests = generation
     alive.current = true
     return () => {
       alive.current = false
-      generation.current++
+      requests.current++
     }
   }, [])
   async function chooseMember(id: string) {
